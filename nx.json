@@ -38,7 +38,12 @@
       "options": {
         "targetName": "test"
       },
-      "exclude": ["apps/rosreestr-extracts-e2e/**/*"]
+      "exclude": [
+        "apps/rosreestr-extracts-e2e/**/*",
+        "apps/api-gateway-e2e/**/*",
+        "apps/auth-service-e2e/**/*",
+        "apps/rest-service-e2e/**/*"
+      ]
     }
   ]
 }
