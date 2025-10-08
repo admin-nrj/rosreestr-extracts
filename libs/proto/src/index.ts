@@ -1,0 +1,4 @@
+import { join } from 'path';
+
+// Export paths to proto files for gRPC service configuration
+export const AUTH_PROTO_PATH = join(__dirname, 'auth.proto');

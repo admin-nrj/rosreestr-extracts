@@ -1,7 +1,10 @@
 {
   "$schema": "./node_modules/nx/schemas/nx-schema.json",
   "namedInputs": {
-    "default": ["{projectRoot}/**/*", "sharedGlobals"],
+    "default": [
+      "{projectRoot}/**/*",
+      "sharedGlobals"
+    ],
     "production": [
       "default",
       "!{projectRoot}/.eslintrc.json",
@@ -41,8 +44,7 @@
       "exclude": [
         "apps/rosreestr-extracts-e2e/**/*",
         "apps/api-gateway-e2e/**/*",
-        "apps/auth-service-e2e/**/*",
-        "apps/rest-service-e2e/**/*"
+        "apps/auth-service-e2e/**/*"
       ]
     }
   ]

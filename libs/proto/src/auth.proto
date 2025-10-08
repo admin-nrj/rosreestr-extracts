@@ -1,0 +1,60 @@
+syntax = "proto3";
+
+package auth;
+
+service AuthService{
+  rpc login (LoginRequest) returns (LoginResponse);
+  rpc validateToken (ValidateTokenRequest) returns (ValidateTokenResponse);
+  rpc refreshToken (RefreshTokenRequest) returns (RefreshTokenResponse);
+};
+
+message LoginRequest {
+  string email = 1;
+  string password = 2;
+}
+
+enum UserRole {
+  USER_ROLE_UNSPECIFIED = 0;  // обязательное значение по умолчанию в proto3
+  USER = 1;
+  ADMIN = 2;
+}
+
+message User {
+  int32 user_id = 1;
+  string email = 2;
+  string name = 3;
+  UserRole role = 4;
+  bool is_active = 5;
+  string lastLoginAt = 6;
+  bool emailVerified = 7 ;
+}
+
+message LoginResponse {
+  string access_token = 1;
+  string refresh_token = 2;
+  User user = 3;
+  string error = 4;
+}
+
+message ValidateTokenRequest {
+  string token = 1;
+}
+
+message ValidateTokenResponse {
+  bool valid = 1;
+  User user = 2;
+  string error = 3;
+}
+
+message RefreshTokenRequest {
+  string refresh_token = 1;
+}
+
+message RefreshTokenResponse {
+  string access_token = 1;
+  string refresh_token = 2;
+  User user = 3;
+  string error = 4;
+}
+
+// npx protoc --ts_proto_out=./libs/interfaces/src/ --proto_path=./libs/proto/src/ ./libs/proto/src/*.proto --ts_proto_opt=nestJs=true

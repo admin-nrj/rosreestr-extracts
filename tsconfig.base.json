@@ -14,7 +14,15 @@
     "skipLibCheck": true,
     "skipDefaultLibCheck": true,
     "baseUrl": ".",
-    "paths": {}
+    "paths": {
+      "@rosreestr-extracts/config": ["libs/config/src/index.ts"],
+      "@rosreestr-extracts/constants": ["libs/constants/src/index.ts"],
+      "@rosreestr-extracts/crypto": ["libs/crypto/src/index.ts"],
+      "@rosreestr-extracts/database": ["libs/database/src/index.ts"],
+      "@rosreestr-extracts/entities": ["libs/entities/src/index.ts"],
+      "@rosreestr-extracts/interfaces": ["libs/interfaces/src/index.ts"],
+      "@rosreestr-extracts/proto": ["libs/proto/src/index.ts"]
+    }
   },
   "exclude": ["node_modules", "tmp"]
 }
