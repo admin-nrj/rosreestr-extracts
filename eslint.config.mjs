@@ -1,6 +1,15 @@
 import nx from '@nx/eslint-plugin';
+import * as tseslint from 'typescript-eslint';
 
 export default [
+  ...tseslint.configs.recommendedTypeChecked,
+  {
+    languageOptions: {
+      parserOptions: {
+        projectService: true,
+      },
+    },
+  },
   ...nx.configs['flat/base'],
   ...nx.configs['flat/typescript'],
   ...nx.configs['flat/javascript'],
