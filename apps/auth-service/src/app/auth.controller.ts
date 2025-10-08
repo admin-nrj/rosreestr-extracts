@@ -7,6 +7,8 @@ import {
   LoginResponse,
   RefreshTokenRequest,
   RefreshTokenResponse,
+  RegisterRequest,
+  RegisterResponse,
   ValidateTokenRequest,
   ValidateTokenResponse
 } from '@rosreestr-extracts/interfaces';
@@ -18,6 +20,10 @@ export class AuthController implements AuthServiceController {
 
   async login(request: LoginRequest): Promise<LoginResponse> {
     return this.authService.login(request);
+  }
+
+  async register(request: RegisterRequest): Promise<RegisterResponse> {
+    return this.authService.register(request);
   }
 
   async validateToken(request: ValidateTokenRequest): Promise<ValidateTokenResponse> {

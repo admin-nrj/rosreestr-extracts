@@ -2,7 +2,7 @@
 // versions:
 //   protoc-gen-ts_proto  v2.7.7
 //   protoc               v6.32.1
-// source: libs/proto/src/auth.proto
+// source: auth.proto
 
 /* eslint-disable */
 import { GrpcMethod, GrpcStreamMethod } from "@nestjs/microservices";
@@ -14,12 +14,55 @@ export enum UserRole {
   /** USER_ROLE_UNSPECIFIED - обязательное значение по умолчанию в proto3 */
   USER_ROLE_UNSPECIFIED = 0,
   USER = 1,
-  ADMIN = 2
+  ADMIN = 2,
+  UNRECOGNIZED = -1,
+}
+
+export enum ErrorCode {
+  /** ERROR_CODE_UNSPECIFIED - No error */
+  ERROR_CODE_UNSPECIFIED = 0,
+  /** INVALID_INPUT - Validation errors (400) */
+  INVALID_INPUT = 1000,
+  INVALID_EMAIL_FORMAT = 1001,
+  INVALID_PASSWORD_FORMAT = 1002,
+  PASSWORD_TOO_SHORT = 1003,
+  MISSING_REQUIRED_FIELD = 1004,
+  /** INVALID_CREDENTIALS - Authentication errors (401) */
+  INVALID_CREDENTIALS = 2000,
+  INVALID_TOKEN = 2001,
+  TOKEN_EXPIRED = 2002,
+  /** USER_NOT_ACTIVE - Authorization errors (403) */
+  USER_NOT_ACTIVE = 3000,
+  EMAIL_NOT_VERIFIED = 3001,
+  INSUFFICIENT_PERMISSIONS = 3002,
+  /** USER_NOT_FOUND - Resource errors (404/409) */
+  USER_NOT_FOUND = 4000,
+  USER_ALREADY_EXISTS = 4001,
+  REFRESH_TOKEN_NOT_FOUND = 4002,
+  /** INTERNAL_ERROR - Server errors (500) */
+  INTERNAL_ERROR = 5000,
+  DATABASE_ERROR = 5001,
+  HASH_ERROR = 5002,
+  UNRECOGNIZED = -1,
 }
 
 export interface LoginRequest {
   email: string;
   password: string;
+}
+
+export interface RegisterRequest {
+  email: string;
+  password: string;
+  name: string;
+}
+
+export interface RegisterResponse {
+  accessToken?: string | undefined;
+  refreshToken?: string | undefined;
+  user?: User | undefined;
+  error?: string | undefined;
+  errorCode: ErrorCode;
 }
 
 export interface User {
@@ -33,10 +76,11 @@ export interface User {
 }
 
 export interface LoginResponse {
-  accessToken: string;
-  refreshToken: string;
-  user: User | undefined;
-  error: string;
+  accessToken?: string | undefined;
+  refreshToken?: string | undefined;
+  user?: User | undefined;
+  error?: string | undefined;
+  errorCode: ErrorCode;
 }
 
 export interface ValidateTokenRequest {
@@ -45,8 +89,9 @@ export interface ValidateTokenRequest {
 
 export interface ValidateTokenResponse {
   valid: boolean;
-  user: User | undefined;
-  error: string;
+  user?: User | undefined;
+  error?: string | undefined;
+  errorCode: ErrorCode;
 }
 
 export interface RefreshTokenRequest {
@@ -54,16 +99,19 @@ export interface RefreshTokenRequest {
 }
 
 export interface RefreshTokenResponse {
-  accessToken: string;
-  refreshToken: string;
-  user: User | undefined;
-  error: string;
+  accessToken?: string | undefined;
+  refreshToken?: string | undefined;
+  user?: User | undefined;
+  error?: string | undefined;
+  errorCode: ErrorCode;
 }
 
 export const AUTH_PACKAGE_NAME = "auth";
 
 export interface AuthServiceClient {
   login(request: LoginRequest): Observable<LoginResponse>;
+
+  register(request: RegisterRequest): Observable<RegisterResponse>;
 
   validateToken(request: ValidateTokenRequest): Observable<ValidateTokenResponse>;
 
@@ -72,6 +120,8 @@ export interface AuthServiceClient {
 
 export interface AuthServiceController {
   login(request: LoginRequest): Promise<LoginResponse> | Observable<LoginResponse> | LoginResponse;
+
+  register(request: RegisterRequest): Promise<RegisterResponse> | Observable<RegisterResponse> | RegisterResponse;
 
   validateToken(
     request: ValidateTokenRequest,
@@ -84,7 +134,7 @@ export interface AuthServiceController {
 
 export function AuthServiceControllerMethods() {
   return function (constructor: Function) {
-    const grpcMethods: string[] = ["login", "validateToken", "refreshToken"];
+    const grpcMethods: string[] = ["login", "register", "validateToken", "refreshToken"];
     for (const method of grpcMethods) {
       const descriptor: any = Reflect.getOwnPropertyDescriptor(constructor.prototype, method);
       GrpcMethod("AuthService", method)(constructor.prototype[method], method, descriptor);

@@ -1,5 +1,14 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { LoginRequest, LoginResponse, RefreshTokenResponse, UserRole } from '@rosreestr-extracts/interfaces';
+import {
+  LoginRequest,
+  LoginResponse,
+  RefreshTokenResponse,
+  RegisterRequest,
+  RegisterResponse,
+  UserRole,
+  ErrorCode,
+  ValidateTokenResponse,
+} from '@rosreestr-extracts/interfaces';
 import { CryptoService } from '@rosreestr-extracts/crypto';
 import { jwtConfig } from '@rosreestr-extracts/config';
 import { ConfigType } from '@nestjs/config';
@@ -7,7 +16,8 @@ import { JwtService } from '@nestjs/jwt';
 import { UserRepository } from './dal/repositories/user.repository';
 import { RefreshTokenRepository } from './dal/repositories/refresh-token.repository';
 import { UserEntity, UserRole as EntityUserRole } from '@rosreestr-extracts/entities';
-import { JwtPayload, JwtRefreshPayload, ValidateTokenResponse } from './interfaces/jwt-payload.interface';
+import { JwtPayload, JwtRefreshPayload } from './interfaces/jwt-payload.interface';
+import { getErrorMessage } from './utils/error-messages.util';
 
 @Injectable()
 export class AuthService {
@@ -22,6 +32,69 @@ export class AuthService {
   ) {}
 
   /**
+   * Create error response with error code and message
+   */
+  private createErrorResponse<T>(
+    errorCode: ErrorCode,
+    template: T
+  ): T & { error: string; errorCode: ErrorCode } {
+    return {
+      ...template,
+      error: getErrorMessage(errorCode),
+      errorCode,
+    };
+  }
+
+  /**
+   * Register a new user
+   * @param registerData - Registration data (email, password, name)
+   * @returns Registration result with tokens and user data or error
+   */
+  async register(registerData: RegisterRequest): Promise<RegisterResponse> {
+    try {
+      if (!registerData.email || !registerData.password) {
+        return this.createErrorResponse(ErrorCode.MISSING_REQUIRED_FIELD, {});
+      }
+
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(registerData.email)) {
+        return this.createErrorResponse(ErrorCode.INVALID_EMAIL_FORMAT, {});
+      }
+
+      const existingUser = await this.userRepository.findByEmail(registerData.email);
+      if (existingUser) {
+        return this.createErrorResponse(ErrorCode.USER_ALREADY_EXISTS, {});
+      }
+
+      if (registerData.password.length < 8) {
+        return this.createErrorResponse(ErrorCode.PASSWORD_TOO_SHORT, {});
+      }
+
+      const passwordHash = await this.cryptoService.hashPassword(registerData.password);
+
+      const newUser = await this.userRepository.create({
+        email: registerData.email,
+        passwordHash,
+        name: registerData.name || '',
+        role: EntityUserRole.USER,
+        isActive: true,
+        emailVerified: false,
+      });
+
+      const tokens = await this.generateTokens(newUser);
+
+      return {
+        accessToken: tokens.accessToken,
+        refreshToken: tokens.refreshToken,
+        user: this.mapUserToProto(newUser),
+        errorCode: ErrorCode.ERROR_CODE_UNSPECIFIED,
+      };
+    } catch (error) {
+      return this.createErrorResponse(ErrorCode.INTERNAL_ERROR, {});
+    }
+  }
+
+  /**
    * Authenticate user with email and password
    * @param loginData - Login credentials
    * @returns Login result with tokens and user data or error
@@ -29,12 +102,7 @@ export class AuthService {
   async login(loginData: LoginRequest): Promise<LoginResponse> {
     try {
       if (!loginData.email || !loginData.password) {
-        return {
-          accessToken: '',
-          refreshToken: '',
-          user: undefined,
-          error: 'Email and password are required',
-        };
+        return this.createErrorResponse(ErrorCode.MISSING_REQUIRED_FIELD, {});
       }
 
       const user = await this.validateUser(loginData.email)
@@ -45,12 +113,7 @@ export class AuthService {
       );
 
       if (!isPasswordValid) {
-        return {
-          accessToken: '',
-          refreshToken: '',
-          user: undefined,
-          error: 'Invalid credentials',
-        };
+        return this.createErrorResponse(ErrorCode.INVALID_CREDENTIALS, {});
       }
 
       await this.userRepository.updateLastLogin(user.id);
@@ -61,49 +124,19 @@ export class AuthService {
         accessToken: tokens.accessToken,
         refreshToken: tokens.refreshToken,
         user: this.mapUserToProto(user),
-        error: undefined
+        errorCode: ErrorCode.ERROR_CODE_UNSPECIFIED,
       };
     } catch (error) {
-      return {
-        accessToken: '',
-        refreshToken: '',
-        user: undefined,
-        error: error.message || 'Login failed',
-      };
+      let errorCode = ErrorCode.INTERNAL_ERROR;
+      if (error.message === 'User not found') {
+        errorCode = ErrorCode.USER_NOT_FOUND;
+      } else if (error.message === 'User not active') {
+        errorCode = ErrorCode.USER_NOT_ACTIVE;
+      }
+
+      return this.createErrorResponse(errorCode, {});
     }
   }
-  //
-  // async register(registerDto: RegisterDto): Promise<AuthResponseDto> {
-  //   const createUserDto: CreateUserDto = {
-  //     name: registerDto.email.split('@')[0],
-  //     email: registerDto.email,
-  //     password: registerDto.password,
-  //     role: UserRole.USER,
-  //   };
-  //
-  //   let userDto: UserResponseDto;
-  //   try {
-  //     userDto = await this.userRepository.create(createUserDto);
-  //   } catch (error) {
-  //     if (error instanceof ConflictException) {
-  //       throw error;
-  //     }
-  //     throw new ConflictException(`Пользователь с email ${registerDto.email} уже существует`);
-  //   }
-  //
-  //   const tokens = this.generateTokens(userDto);
-  //
-  //   return {
-  //     ...tokens,
-  //     user: {
-  //       userId: userDto.userId,
-  //       email: userDto.email,
-  //       name: userDto.name,
-  //       role: userDto.role,
-  //     },
-  //   };
-  // }
-
 
   /**
    * Validate JWT token and check user in database
@@ -121,14 +154,19 @@ export class AuthService {
       return {
         valid: true,
         user: this.mapUserToProto(user),
-        error: undefined
+        errorCode: ErrorCode.ERROR_CODE_UNSPECIFIED,
       };
     } catch (error) {
-      return {
-        valid: false,
-        user: undefined,
-        error: error.message || 'Invalid token'
-      };
+      let errorCode = ErrorCode.INVALID_TOKEN;
+      if (error.name === 'TokenExpiredError') {
+        errorCode = ErrorCode.TOKEN_EXPIRED;
+      } else if (error.message === 'User not found') {
+        errorCode = ErrorCode.USER_NOT_FOUND;
+      } else if (error.message === 'User not active') {
+        errorCode = ErrorCode.USER_NOT_ACTIVE;
+      }
+
+      return this.createErrorResponse(errorCode, { valid: false });
     }
   }
 
@@ -146,23 +184,12 @@ export class AuthService {
       const storedToken = await this.refreshTokenRepository.findByToken(refreshToken);
 
       if (!storedToken) {
-        return {
-          accessToken: '',
-          refreshToken: '',
-          user: undefined,
-          error: 'Invalid refresh token',
-        };
+        return this.createErrorResponse(ErrorCode.REFRESH_TOKEN_NOT_FOUND, {});
       }
 
       if (storedToken.expiresAt < new Date()) {
         await this.refreshTokenRepository.revoke(refreshToken);
-
-        return {
-          accessToken: '',
-          refreshToken: '',
-          user: undefined,
-          error: 'Refresh token expired',
-        };
+        return this.createErrorResponse(ErrorCode.TOKEN_EXPIRED, {});
       }
 
       const user = await this.validateUser(payload.email);
@@ -175,15 +202,19 @@ export class AuthService {
         accessToken: tokens.accessToken,
         refreshToken: tokens.refreshToken,
         user: this.mapUserToProto(user),
-        error: undefined
+        errorCode: ErrorCode.ERROR_CODE_UNSPECIFIED,
       };
     } catch (error) {
-      return {
-        accessToken: '',
-        refreshToken: '',
-        user: undefined,
-        error: error.message || 'Failed to refresh token',
-      };
+      let errorCode = ErrorCode.INVALID_TOKEN;
+      if (error.name === 'TokenExpiredError') {
+        errorCode = ErrorCode.TOKEN_EXPIRED;
+      } else if (error.message === 'User not found') {
+        errorCode = ErrorCode.USER_NOT_FOUND;
+      } else if (error.message === 'User not active') {
+        errorCode = ErrorCode.USER_NOT_ACTIVE;
+      }
+
+      return this.createErrorResponse(errorCode, {});
     }
   }
 
