@@ -6,7 +6,7 @@ import { AuthService } from './auth.service';
 import { CryptoModule } from '@rosreestr-extracts/crypto';
 import { DatabaseModule } from '@rosreestr-extracts/database';
 import { jwtConfig } from '@rosreestr-extracts/config';
-import { UserEntity } from '@rosreestr-extracts/entities';
+import { UserEntity, RefreshTokenEntity } from '@rosreestr-extracts/entities';
 import { DalModule } from './dal/dal.module';
 
 @Module({
@@ -27,7 +27,7 @@ import { DalModule } from './dal/dal.module';
       }),
     }),
     DatabaseModule.forRoot({
-      entities: [UserEntity],
+      entities: [UserEntity, RefreshTokenEntity],
     }),
     CryptoModule,
     DalModule,

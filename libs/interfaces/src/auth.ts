@@ -10,14 +10,6 @@ import { Observable } from "rxjs";
 
 export const protobufPackage = "auth";
 
-export enum UserRole {
-  /** USER_ROLE_UNSPECIFIED - обязательное значение по умолчанию в proto3 */
-  USER_ROLE_UNSPECIFIED = 0,
-  USER = 1,
-  ADMIN = 2,
-  UNRECOGNIZED = -1,
-}
-
 export enum ErrorCode {
   /** ERROR_CODE_UNSPECIFIED - No error */
   ERROR_CODE_UNSPECIFIED = 0,
@@ -55,6 +47,7 @@ export interface RegisterRequest {
   email: string;
   password: string;
   name: string;
+  pbxExtension?: number | undefined;
 }
 
 export interface RegisterResponse {
@@ -69,7 +62,7 @@ export interface User {
   userId: number;
   email: string;
   name: string;
-  role: UserRole;
+  role: string;
   isActive: boolean;
   lastLoginAt: string;
   emailVerified: boolean;

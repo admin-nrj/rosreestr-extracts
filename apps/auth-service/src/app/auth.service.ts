@@ -5,7 +5,6 @@ import {
   RefreshTokenResponse,
   RegisterRequest,
   RegisterResponse,
-  UserRole,
   ErrorCode,
   ValidateTokenResponse,
 } from '@rosreestr-extracts/interfaces';
@@ -17,8 +16,7 @@ import { UserRepository } from './dal/repositories/user.repository';
 import { RefreshTokenRepository } from './dal/repositories/refresh-token.repository';
 import { UserEntity, UserRole as EntityUserRole } from '@rosreestr-extracts/entities';
 import { JwtPayload, JwtRefreshPayload } from './interfaces/jwt-payload.interface';
-import { getErrorText } from './utils/error-messages.util';
-import { getErrorMessage, getErrorName } from '@rosreestr-extracts/utils';
+import { getErrorMessage, getErrorName, getErrorText } from '@rosreestr-extracts/utils';
 
 @Injectable()
 export class AuthService {
@@ -248,24 +246,13 @@ export class AuthService {
       userId: entity.id,
       email: entity.email,
       name: entity.name || '',
-      role: this.mapRoleToProto(entity.role),
+      role: entity.role,
       isActive: entity.isActive,
       lastLoginAt: entity.lastLoginAt?.toISOString() || '',
       emailVerified: entity.emailVerified,
       payCount: entity.payCount,
       pbxExtension: entity.pbxExtension
     };
-  }
-
-  /**
-   * Convert entity UserRole (string) to proto UserRole (number)
-   */
-  private mapRoleToProto(role: EntityUserRole): UserRole {
-    const roleMap = {
-      [EntityUserRole.USER]: UserRole.USER,
-      [EntityUserRole.ADMIN]: UserRole.ADMIN,
-    };
-    return roleMap[role] || UserRole.USER_ROLE_UNSPECIFIED;
   }
 
   private async generateTokens(user: UserEntity) {
