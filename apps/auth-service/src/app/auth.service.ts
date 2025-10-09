@@ -86,8 +86,7 @@ export class AuthService {
       return {
         accessToken: tokens.accessToken,
         refreshToken: tokens.refreshToken,
-        user: this.mapUserToProto(newUser),
-        errorCode: ErrorCode.ERROR_CODE_UNSPECIFIED,
+        user: this.mapUserToProto(newUser)
       };
     } catch (error) {
       return this.createErrorResponse(ErrorCode.INTERNAL_ERROR, {});
@@ -123,8 +122,7 @@ export class AuthService {
       return {
         accessToken: tokens.accessToken,
         refreshToken: tokens.refreshToken,
-        user: this.mapUserToProto(user),
-        errorCode: ErrorCode.ERROR_CODE_UNSPECIFIED,
+        user: this.mapUserToProto(user)
       };
     } catch (error) {
       let errorCode = ErrorCode.INTERNAL_ERROR;
@@ -153,8 +151,7 @@ export class AuthService {
 
       return {
         valid: true,
-        user: this.mapUserToProto(user),
-        errorCode: ErrorCode.ERROR_CODE_UNSPECIFIED,
+        user: this.mapUserToProto(user)
       };
     } catch (error) {
       let errorCode = ErrorCode.INVALID_TOKEN;
@@ -201,8 +198,7 @@ export class AuthService {
       return {
         accessToken: tokens.accessToken,
         refreshToken: tokens.refreshToken,
-        user: this.mapUserToProto(user),
-        errorCode: ErrorCode.ERROR_CODE_UNSPECIFIED,
+        user: this.mapUserToProto(user)
       };
     } catch (error) {
       let errorCode = ErrorCode.INVALID_TOKEN;

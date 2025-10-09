@@ -62,7 +62,7 @@ message RegisterResponse {
   optional string refresh_token = 2;
   optional User user = 3;
   optional string error = 4;
-  ErrorCode error_code = 5;
+  optional ErrorCode error_code = 5;
 }
 
 message User {
@@ -80,7 +80,7 @@ message LoginResponse {
   optional string refresh_token = 2;
   optional User user = 3;
   optional string error = 4;
-  ErrorCode error_code = 5;
+  optional ErrorCode error_code = 5;
 }
 
 message ValidateTokenRequest {
@@ -91,7 +91,7 @@ message ValidateTokenResponse {
   bool valid = 1;
   optional User user = 2;
   optional string error = 3;
-  ErrorCode error_code = 4;
+  optional ErrorCode error_code = 4;
 }
 
 message RefreshTokenRequest {
@@ -103,7 +103,7 @@ message RefreshTokenResponse {
   optional string refresh_token = 2;
   optional User user = 3;
   optional string error = 4;
-  ErrorCode error_code = 5;
+  optional ErrorCode error_code = 5;
 }
 
 // npx protoc --ts_proto_out=./libs/interfaces/src/ --proto_path=./libs/proto/src/ ./libs/proto/src/*.proto --ts_proto_opt=nestJs=true

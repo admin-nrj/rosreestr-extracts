@@ -62,7 +62,7 @@ export interface RegisterResponse {
   refreshToken?: string | undefined;
   user?: User | undefined;
   error?: string | undefined;
-  errorCode: ErrorCode;
+  errorCode?: ErrorCode | undefined;
 }
 
 export interface User {
@@ -80,7 +80,7 @@ export interface LoginResponse {
   refreshToken?: string | undefined;
   user?: User | undefined;
   error?: string | undefined;
-  errorCode: ErrorCode;
+  errorCode?: ErrorCode | undefined;
 }
 
 export interface ValidateTokenRequest {
@@ -91,7 +91,7 @@ export interface ValidateTokenResponse {
   valid: boolean;
   user?: User | undefined;
   error?: string | undefined;
-  errorCode: ErrorCode;
+  errorCode?: ErrorCode | undefined;
 }
 
 export interface RefreshTokenRequest {
@@ -103,7 +103,7 @@ export interface RefreshTokenResponse {
   refreshToken?: string | undefined;
   user?: User | undefined;
   error?: string | undefined;
-  errorCode: ErrorCode;
+  errorCode?: ErrorCode | undefined;
 }
 
 export const AUTH_PACKAGE_NAME = "auth";
