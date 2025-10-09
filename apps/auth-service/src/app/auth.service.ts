@@ -17,7 +17,8 @@ import { UserRepository } from './dal/repositories/user.repository';
 import { RefreshTokenRepository } from './dal/repositories/refresh-token.repository';
 import { UserEntity, UserRole as EntityUserRole } from '@rosreestr-extracts/entities';
 import { JwtPayload, JwtRefreshPayload } from './interfaces/jwt-payload.interface';
-import { getErrorMessage } from './utils/error-messages.util';
+import { getErrorText } from './utils/error-messages.util';
+import { getErrorMessage, getErrorName } from '@rosreestr-extracts/utils';
 
 @Injectable()
 export class AuthService {
@@ -40,7 +41,7 @@ export class AuthService {
   ): T & { error: string; errorCode: ErrorCode } {
     return {
       ...template,
-      error: getErrorMessage(errorCode),
+      error: getErrorText(errorCode),
       errorCode,
     };
   }
@@ -89,6 +90,7 @@ export class AuthService {
         user: this.mapUserToProto(newUser)
       };
     } catch (error) {
+      console.log('[register] error: ', getErrorMessage(error));
       return this.createErrorResponse(ErrorCode.INTERNAL_ERROR, {});
     }
   }
@@ -126,9 +128,10 @@ export class AuthService {
       };
     } catch (error) {
       let errorCode = ErrorCode.INTERNAL_ERROR;
-      if (error.message === 'User not found') {
+      const errorMessage = getErrorMessage(error);
+      if (errorMessage === 'User not found') {
         errorCode = ErrorCode.USER_NOT_FOUND;
-      } else if (error.message === 'User not active') {
+      } else if (errorMessage === 'User not active') {
         errorCode = ErrorCode.USER_NOT_ACTIVE;
       }
 
@@ -155,11 +158,12 @@ export class AuthService {
       };
     } catch (error) {
       let errorCode = ErrorCode.INVALID_TOKEN;
-      if (error.name === 'TokenExpiredError') {
+      const errorMessage = getErrorMessage(error)
+      if (getErrorName(error) === 'TokenExpiredError') {
         errorCode = ErrorCode.TOKEN_EXPIRED;
-      } else if (error.message === 'User not found') {
+      } else if (errorMessage === 'User not found') {
         errorCode = ErrorCode.USER_NOT_FOUND;
-      } else if (error.message === 'User not active') {
+      } else if (errorMessage === 'User not active') {
         errorCode = ErrorCode.USER_NOT_ACTIVE;
       }
 
@@ -202,11 +206,12 @@ export class AuthService {
       };
     } catch (error) {
       let errorCode = ErrorCode.INVALID_TOKEN;
-      if (error.name === 'TokenExpiredError') {
+      const errorMessage = getErrorMessage(error)
+      if (getErrorName(error) === 'TokenExpiredError') {
         errorCode = ErrorCode.TOKEN_EXPIRED;
-      } else if (error.message === 'User not found') {
+      } else if (errorMessage === 'User not found') {
         errorCode = ErrorCode.USER_NOT_FOUND;
-      } else if (error.message === 'User not active') {
+      } else if (errorMessage === 'User not active') {
         errorCode = ErrorCode.USER_NOT_ACTIVE;
       }
 

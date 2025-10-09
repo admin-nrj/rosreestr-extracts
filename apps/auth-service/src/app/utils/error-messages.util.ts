@@ -4,7 +4,7 @@ import { ErrorCode } from '@rosreestr-extracts/interfaces';
  * Map ErrorCode to default error message
  * These are fallback messages, api-gateway can override them for localization
  */
-export function getErrorMessage(errorCode: ErrorCode): string {
+export function getErrorText(errorCode: ErrorCode): string {
   const errorMessages: Partial<Record<ErrorCode, string>> = {
     [ErrorCode.ERROR_CODE_UNSPECIFIED]: '',
 
