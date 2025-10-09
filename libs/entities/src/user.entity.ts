@@ -31,4 +31,10 @@ export class UserEntity extends BaseEntity {
 
   @Column({ name: 'last_login_at', type: 'timestamp', nullable: true })
   lastLoginAt?: Date;
+
+  @Column({ name: 'pay_count', type: 'integer', default: 0 })
+  payCount: number;
+
+  @Column({ name: 'pbx_extension', type: 'smallint', nullable: true })
+  pbxExtension?: number;
 }

@@ -57,6 +57,17 @@ export class CreateUsersTable1728400000000 implements MigrationInterface {
             isNullable: true,
           },
           {
+            name: 'pay_count',
+            type: 'integer',
+            default: 0,
+            isNullable: false,
+          },
+          {
+            name: 'pbx_extension',
+            type: 'smallint',
+            isNullable: true,
+          },
+          {
             name: 'created_at',
             type: 'timestamp',
             default: 'CURRENT_TIMESTAMP',

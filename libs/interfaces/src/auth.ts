@@ -73,6 +73,8 @@ export interface User {
   isActive: boolean;
   lastLoginAt: string;
   emailVerified: boolean;
+  payCount: number;
+  pbxExtension?: number | undefined;
 }
 
 export interface LoginResponse {

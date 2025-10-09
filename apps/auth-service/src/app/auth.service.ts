@@ -252,6 +252,8 @@ export class AuthService {
       isActive: entity.isActive,
       lastLoginAt: entity.lastLoginAt?.toISOString() || '',
       emailVerified: entity.emailVerified,
+      payCount: entity.payCount,
+      pbxExtension: entity.pbxExtension
     };
   }
 

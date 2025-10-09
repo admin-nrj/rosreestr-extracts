@@ -72,7 +72,9 @@ message User {
   UserRole role = 4;
   bool is_active = 5;
   string lastLoginAt = 6;
-  bool emailVerified = 7 ;
+  bool emailVerified = 7;
+  int32 pay_count = 8;
+  optional int32 pbx_extension = 9;
 }
 
 message LoginResponse {
