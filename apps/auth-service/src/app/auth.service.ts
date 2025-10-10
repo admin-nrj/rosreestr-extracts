@@ -16,7 +16,12 @@ import { UserRepository } from '@rosreestr-extracts/dal';
 import { RefreshTokenRepository } from './dal/repositories/refresh-token.repository';
 import { UserEntity, UserRole as EntityUserRole } from '@rosreestr-extracts/entities';
 import { JwtPayload, JwtRefreshPayload } from './interfaces/jwt-payload.interface';
-import { getErrorMessage, getErrorName, getErrorText } from '@rosreestr-extracts/utils';
+import {
+  createErrorResponse,
+  getErrorMessage,
+  getErrorName,
+  mapUserToProto,
+} from '@rosreestr-extracts/utils';
 
 @Injectable()
 export class AuthService {
@@ -31,19 +36,6 @@ export class AuthService {
   ) {}
 
   /**
-   * Create error response with error code and message
-   */
-  private createErrorResponse(
-    errorCode: ErrorCode
-  ): { error: { error: string; errorCode: ErrorCode } } {
-    const error = {
-      error: getErrorText(errorCode),
-      errorCode,
-    }
-    return { error };
-  }
-
-  /**
    * Register a new user
    * @param registerData - Registration data (email, password, name)
    * @returns Registration result with tokens and user data or error
@@ -51,21 +43,21 @@ export class AuthService {
   async register(registerData: RegisterRequest): Promise<RegisterResponse> {
     try {
       if (!registerData.email || !registerData.password) {
-        return this.createErrorResponse(ErrorCode.MISSING_REQUIRED_FIELD);
+        return createErrorResponse(ErrorCode.MISSING_REQUIRED_FIELD);
       }
 
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
       if (!emailRegex.test(registerData.email)) {
-        return this.createErrorResponse(ErrorCode.INVALID_EMAIL_FORMAT);
+        return createErrorResponse(ErrorCode.INVALID_EMAIL_FORMAT);
       }
 
       const existingUser = await this.userRepository.findByEmail(registerData.email);
       if (existingUser) {
-        return this.createErrorResponse(ErrorCode.USER_ALREADY_EXISTS);
+        return createErrorResponse(ErrorCode.USER_ALREADY_EXISTS);
       }
 
       if (registerData.password.length < 8) {
-        return this.createErrorResponse(ErrorCode.PASSWORD_TOO_SHORT);
+        return createErrorResponse(ErrorCode.PASSWORD_TOO_SHORT);
       }
 
       const passwordHash = await this.cryptoService.hashPassword(registerData.password);
@@ -84,11 +76,11 @@ export class AuthService {
       return {
         accessToken: tokens.accessToken,
         refreshToken: tokens.refreshToken,
-        user: this.mapUserToProto(newUser)
+        user: mapUserToProto(newUser)
       };
     } catch (error) {
       console.log('[register] error: ', getErrorMessage(error));
-      return this.createErrorResponse(ErrorCode.INTERNAL_ERROR);
+      return createErrorResponse(ErrorCode.INTERNAL_ERROR);
     }
   }
 
@@ -100,7 +92,7 @@ export class AuthService {
   async login(loginData: LoginRequest): Promise<LoginResponse> {
     try {
       if (!loginData.email || !loginData.password) {
-        return this.createErrorResponse(ErrorCode.MISSING_REQUIRED_FIELD);
+        return createErrorResponse(ErrorCode.MISSING_REQUIRED_FIELD);
       }
 
       const user = await this.validateUser(loginData.email)
@@ -111,7 +103,7 @@ export class AuthService {
       );
 
       if (!isPasswordValid) {
-        return this.createErrorResponse(ErrorCode.INVALID_CREDENTIALS);
+        return createErrorResponse(ErrorCode.INVALID_CREDENTIALS);
       }
 
       await this.userRepository.updateLastLogin(user.id);
@@ -121,7 +113,7 @@ export class AuthService {
       return {
         accessToken: tokens.accessToken,
         refreshToken: tokens.refreshToken,
-        user: this.mapUserToProto(user)
+        user: mapUserToProto(user)
       };
     } catch (error) {
       let errorCode = ErrorCode.INTERNAL_ERROR;
@@ -132,7 +124,7 @@ export class AuthService {
         errorCode = ErrorCode.USER_NOT_ACTIVE;
       }
 
-      return this.createErrorResponse(errorCode);
+      return createErrorResponse(errorCode);
     }
   }
 
@@ -151,7 +143,7 @@ export class AuthService {
 
       return {
         valid: true,
-        user: this.mapUserToProto(user)
+        user: mapUserToProto(user)
       };
     } catch (error) {
       let errorCode = ErrorCode.INVALID_TOKEN;
@@ -166,7 +158,7 @@ export class AuthService {
 
       return {
         valid: false,
-        ...this.createErrorResponse(errorCode)
+        ...createErrorResponse(errorCode)
       };
     }
   }
@@ -185,12 +177,12 @@ export class AuthService {
       const storedToken = await this.refreshTokenRepository.findByToken(refreshToken);
 
       if (!storedToken) {
-        return this.createErrorResponse(ErrorCode.REFRESH_TOKEN_NOT_FOUND);
+        return createErrorResponse(ErrorCode.REFRESH_TOKEN_NOT_FOUND);
       }
 
       if (storedToken.expiresAt < new Date()) {
         await this.refreshTokenRepository.revoke(refreshToken);
-        return this.createErrorResponse(ErrorCode.TOKEN_EXPIRED);
+        return createErrorResponse(ErrorCode.TOKEN_EXPIRED);
       }
 
       const user = await this.validateUser(payload.email);
@@ -202,7 +194,7 @@ export class AuthService {
       return {
         accessToken: tokens.accessToken,
         refreshToken: tokens.refreshToken,
-        user: this.mapUserToProto(user)
+        user: mapUserToProto(user)
       };
     } catch (error) {
       let errorCode = ErrorCode.INVALID_TOKEN;
@@ -215,7 +207,7 @@ export class AuthService {
         errorCode = ErrorCode.USER_NOT_ACTIVE;
       }
 
-      return this.createErrorResponse(errorCode);
+      return createErrorResponse(errorCode);
     }
   }
 
@@ -236,25 +228,6 @@ export class AuthService {
     }
 
     return user;
-  }
-
-  /**
-   * Map UserEntity to proto User message
-   * @param entity - User entity from database
-   * @returns Proto User message without sensitive data
-   */
-  private mapUserToProto(entity: UserEntity) {
-    return {
-      userId: entity.id,
-      email: entity.email,
-      name: entity.name || '',
-      role: entity.role,
-      isActive: entity.isActive,
-      lastLoginAt: entity.lastLoginAt?.toISOString() || '',
-      emailVerified: entity.emailVerified,
-      payCount: entity.payCount,
-      pbxExtension: entity.pbxExtension
-    };
   }
 
   private async generateTokens(user: UserEntity) {

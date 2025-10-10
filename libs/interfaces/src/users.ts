@@ -16,6 +16,7 @@ export interface AllUsersRequest {
 
 export interface AllUsersResponse {
   users: User[];
+  error?: Error | undefined;
 }
 
 export interface UserRequest {
@@ -24,11 +25,12 @@ export interface UserRequest {
 }
 
 export interface UserResponse {
-  user: User | undefined;
+  user?: User | undefined;
   error?: Error | undefined;
 }
 
 export interface UpdateUserRequest {
+  id: number;
   email?: string | undefined;
   name?: string | undefined;
   role?: string | undefined;
@@ -38,11 +40,6 @@ export interface UpdateUserRequest {
   pbxExtension?: number | undefined;
 }
 
-export interface UpdateUserResponse {
-  user: User | undefined;
-  error?: Error | undefined;
-}
-
 export const USERS_PACKAGE_NAME = "users";
 
 export interface UsersServiceClient {
@@ -50,7 +47,7 @@ export interface UsersServiceClient {
 
   getUser(request: UserRequest): Observable<UserResponse>;
 
-  updateUser(request: UpdateUserRequest): Observable<UpdateUserResponse>;
+  updateUser(request: UpdateUserRequest): Observable<UserResponse>;
 }
 
 export interface UsersServiceController {
@@ -58,9 +55,7 @@ export interface UsersServiceController {
 
   getUser(request: UserRequest): Promise<UserResponse> | Observable<UserResponse> | UserResponse;
 
-  updateUser(
-    request: UpdateUserRequest,
-  ): Promise<UpdateUserResponse> | Observable<UpdateUserResponse> | UpdateUserResponse;
+  updateUser(request: UpdateUserRequest): Promise<UserResponse> | Observable<UserResponse> | UserResponse;
 }
 
 export function UsersServiceControllerMethods() {

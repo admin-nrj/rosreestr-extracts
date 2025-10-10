@@ -5,7 +5,6 @@ export {
   AllUsersRequest,
   AllUsersResponse,
   UpdateUserRequest,
-  UpdateUserResponse,
   UserRequest,
   UserResponse,
   USERS_SERVICE_NAME,

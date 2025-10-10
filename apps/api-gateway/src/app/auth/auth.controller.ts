@@ -4,7 +4,7 @@ import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { AuthResponseDto } from './dto/auth-response.dto';
 import { AUTH_PACKAGE_NAME, AUTH_SERVICE_NAME, AuthServiceClient } from '@rosreestr-extracts/interfaces';
-import { throwIfError } from './utils/error-mapper.util';
+import { throwIfError } from '@rosreestr-extracts/utils';
 import { firstValueFrom } from 'rxjs';
 import { Logger } from '@nestjs/common';
 
