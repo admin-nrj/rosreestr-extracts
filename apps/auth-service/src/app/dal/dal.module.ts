@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
 import { DatabaseModule } from '@rosreestr-extracts/database';
-import { UserEntity, RefreshTokenEntity } from '@rosreestr-extracts/entities';
-import { UserRepository } from './repositories/user.repository';
+import { DalModule as SharedDalModule } from '@rosreestr-extracts/dal';
+import { RefreshTokenEntity } from '@rosreestr-extracts/entities';
 import { RefreshTokenRepository } from './repositories/refresh-token.repository';
 
 /**
@@ -9,8 +9,11 @@ import { RefreshTokenRepository } from './repositories/refresh-token.repository'
  * Provides repositories for database operations
  */
 @Module({
-  imports: [DatabaseModule.forFeature([UserEntity, RefreshTokenEntity])],
-  providers: [UserRepository, RefreshTokenRepository],
-  exports: [UserRepository, RefreshTokenRepository],
+  imports: [
+    DatabaseModule.forFeature([RefreshTokenEntity]),
+    SharedDalModule,
+  ],
+  providers: [RefreshTokenRepository],
+  exports: [RefreshTokenRepository, SharedDalModule],
 })
 export class DalModule {}

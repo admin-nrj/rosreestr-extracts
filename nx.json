@@ -44,8 +44,16 @@
       "exclude": [
         "apps/rosreestr-extracts-e2e/**/*",
         "apps/api-gateway-e2e/**/*",
-        "apps/auth-service-e2e/**/*"
+        "apps/auth-service-e2e/**/*",
+        "apps/users-service-e2e/**/*"
       ]
     }
-  ]
+  ],
+  "targetDefaults": {
+    "@nx/js:tsc": {
+      "cache": true,
+      "dependsOn": ["^build"],
+      "inputs": ["production", "^production"]
+    }
+  }
 }

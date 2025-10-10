@@ -7,36 +7,9 @@
 /* eslint-disable */
 import { GrpcMethod, GrpcStreamMethod } from "@nestjs/microservices";
 import { Observable } from "rxjs";
+import { Error, User } from "./common";
 
 export const protobufPackage = "auth";
-
-export enum ErrorCode {
-  /** ERROR_CODE_UNSPECIFIED - No error */
-  ERROR_CODE_UNSPECIFIED = 0,
-  /** INVALID_INPUT - Validation errors (400) */
-  INVALID_INPUT = 1000,
-  INVALID_EMAIL_FORMAT = 1001,
-  INVALID_PASSWORD_FORMAT = 1002,
-  PASSWORD_TOO_SHORT = 1003,
-  MISSING_REQUIRED_FIELD = 1004,
-  /** INVALID_CREDENTIALS - Authentication errors (401) */
-  INVALID_CREDENTIALS = 2000,
-  INVALID_TOKEN = 2001,
-  TOKEN_EXPIRED = 2002,
-  /** USER_NOT_ACTIVE - Authorization errors (403) */
-  USER_NOT_ACTIVE = 3000,
-  EMAIL_NOT_VERIFIED = 3001,
-  INSUFFICIENT_PERMISSIONS = 3002,
-  /** USER_NOT_FOUND - Resource errors (404/409) */
-  USER_NOT_FOUND = 4000,
-  USER_ALREADY_EXISTS = 4001,
-  REFRESH_TOKEN_NOT_FOUND = 4002,
-  /** INTERNAL_ERROR - Server errors (500) */
-  INTERNAL_ERROR = 5000,
-  DATABASE_ERROR = 5001,
-  HASH_ERROR = 5002,
-  UNRECOGNIZED = -1,
-}
 
 export interface LoginRequest {
   email: string;
@@ -54,28 +27,14 @@ export interface RegisterResponse {
   accessToken?: string | undefined;
   refreshToken?: string | undefined;
   user?: User | undefined;
-  error?: string | undefined;
-  errorCode?: ErrorCode | undefined;
-}
-
-export interface User {
-  userId: number;
-  email: string;
-  name: string;
-  role: string;
-  isActive: boolean;
-  lastLoginAt: string;
-  emailVerified: boolean;
-  payCount: number;
-  pbxExtension?: number | undefined;
+  error?: Error | undefined;
 }
 
 export interface LoginResponse {
   accessToken?: string | undefined;
   refreshToken?: string | undefined;
   user?: User | undefined;
-  error?: string | undefined;
-  errorCode?: ErrorCode | undefined;
+  error?: Error | undefined;
 }
 
 export interface ValidateTokenRequest {
@@ -85,8 +44,7 @@ export interface ValidateTokenRequest {
 export interface ValidateTokenResponse {
   valid: boolean;
   user?: User | undefined;
-  error?: string | undefined;
-  errorCode?: ErrorCode | undefined;
+  error?: Error | undefined;
 }
 
 export interface RefreshTokenRequest {
@@ -97,8 +55,7 @@ export interface RefreshTokenResponse {
   accessToken?: string | undefined;
   refreshToken?: string | undefined;
   user?: User | undefined;
-  error?: string | undefined;
-  errorCode?: ErrorCode | undefined;
+  error?: Error | undefined;
 }
 
 export const AUTH_PACKAGE_NAME = "auth";

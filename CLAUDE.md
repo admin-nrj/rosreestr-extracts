@@ -31,8 +31,41 @@ This is a **microservices architecture** using **NestJS** with **gRPC** for inte
 
 ### Services
 
-- **api-gateway**: HTTP REST API gateway that exposes HTTP endpoints and communicates with microservices via gRPC
-- **auth-service**: Authentication microservice running as a gRPC server
+- **api-gateway**: HTTP REST API gateway (port: 3003) that exposes HTTP endpoints and communicates with microservices via gRPC
+- **auth-service**: Authentication microservice running as a gRPC server (port: 5001)
+- **users-service**: User management microservice running as a gRPC server (port: 5002)
+
+### Service Ports Configuration
+
+All service ports are managed through **ConfigService** and configured via environment variables in `.env`:
+
+```bash
+# HTTP Gateway (REST API)
+API_GATEWAY_PORT=3003
+
+# gRPC Microservices
+AUTH_SERVICE_PORT=5001
+USERS_SERVICE_PORT=5002
+
+# Optional: Override service URLs (useful for Docker, Kubernetes, etc.)
+AUTH_SERVICE_URL=auth-service:5001
+USERS_SERVICE_URL=users-service:5002
+```
+
+**Configuration is managed via `@rosreestr-extracts/config` with type-safe access:**
+
+```typescript
+// Using typed config (recommended)
+const appCfg = app.get<ConfigType<typeof appConfig>>(appConfig.KEY);
+const port = appCfg.ports.apiGateway;
+const authUrl = appCfg.urls.authService;
+```
+
+Available config properties:
+- **Ports**: `appCfg.ports.apiGateway`, `appCfg.ports.authService`, `appCfg.ports.usersService`
+- **URLs**: `appCfg.urls.authService`, `appCfg.urls.usersService`
+
+To change ports, update the `.env` file. Services automatically load configuration through ConfigService on startup.
 
 ### Communication Pattern
 
@@ -48,6 +81,7 @@ This is a **microservices architecture** using **NestJS** with **gRPC** for inte
 - **@rosreestr-extracts/crypto**: Cryptography service (password hashing with bcrypt)
 - **@rosreestr-extracts/database**: TypeORM database module
 - **@rosreestr-extracts/entities**: Shared database entities (BaseEntity, UserEntity, etc.)
+- **@rosreestr-extracts/dal**: Data Access Layer with shared repositories (UserRepository, interfaces)
 
 ## Development Commands
 
@@ -216,53 +250,67 @@ export class CustomEntity extends BaseEntity {
 
 ### Repository Pattern
 
-**Repository Interface:**
+The project uses the **@rosreestr-extracts/dal** library for shared repositories to avoid code duplication across services.
+
+**Using Shared UserRepository:**
 ```typescript
-export interface IUserRepository {
-  findById(id: number): Promise<UserEntity | null>;
-  findByEmail(email: string): Promise<UserEntity | null>;
-  create(data: CreateUserDto): Promise<UserEntity>;
+import { Module } from '@nestjs/common';
+import { DalModule } from '@rosreestr-extracts/dal';
+
+@Module({
+  imports: [DalModule],  // Import shared DAL module
+  // UserRepository is now available for injection
+})
+export class YourServiceModule {}
+```
+
+**In your service:**
+```typescript
+import { Injectable } from '@nestjs/common';
+import { UserRepository, IUserRepository } from '@rosreestr-extracts/dal';
+
+@Injectable()
+export class YourService {
+  constructor(
+    private readonly userRepository: UserRepository
+  ) {}
+
+  async getUser(id: number) {
+    return this.userRepository.findById(id);
+  }
 }
 ```
 
-**Repository Implementation:**
+**Available UserRepository methods:**
+- `findById(id: number): Promise<UserEntity | null>`
+- `findByEmail(email: string): Promise<UserEntity | null>`
+- `create(userData: Partial<UserEntity>): Promise<UserEntity>`
+- `update(id: number, userData: Partial<UserEntity>): Promise<UserEntity>`
+- `updateLastLogin(id: number): Promise<void>`
+- `softDelete(id: number): Promise<void>`
+- `restore(id: number): Promise<void>`
+- `emailExists(email: string): Promise<boolean>`
+- `findAllActive(): Promise<UserEntity[]>`
+
+**Creating Service-Specific Repositories:**
+
+For service-specific repositories, create them in your service's local `dal` directory:
+
 ```typescript
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import { YourEntity } from './entities/your.entity';
 
 @Injectable()
-export class UserRepository implements IUserRepository {
+export class YourRepository {
   constructor(
-    @InjectRepository(UserEntity)
-    private readonly repository: Repository<UserEntity>,
+    @InjectRepository(YourEntity)
+    private readonly repository: Repository<YourEntity>,
   ) {}
 
-  async findById(id: number): Promise<UserEntity | null> {
-    return this.repository.findOne({ where: { id } });
-  }
-
-  async findByEmail(email: string): Promise<UserEntity | null> {
-    return this.repository.findOne({ where: { email } });
-  }
-
-  async create(data: CreateUserDto): Promise<UserEntity> {
-    const user = this.repository.create(data);
-    return this.repository.save(user);
-  }
+  // Your custom methods
 }
-```
-
-**Register Repository:**
-```typescript
-import { DatabaseModule } from '@rosreestr-extracts/database';
-
-@Module({
-  imports: [DatabaseModule.forFeature([UserEntity])],
-  providers: [UserRepository],
-  exports: [UserRepository],
-})
-export class DalModule {}
 ```
 
 ### Database per Service Pattern

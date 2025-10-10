@@ -1,0 +1,22 @@
+syntax = "proto3";
+
+import 'enums.proto';
+
+package common;
+
+message User {
+  int32 user_id = 1;
+  string email = 2;
+  string name = 3;
+  string role = 4;
+  bool is_active = 5;
+  string lastLoginAt = 6;
+  bool emailVerified = 7;
+  int32 pay_count = 8;
+  optional int32 pbx_extension = 9;
+}
+
+message Error {
+  optional string error = 1;
+  optional enums.ErrorCode error_code = 2;
+}

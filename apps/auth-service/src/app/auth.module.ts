@@ -5,7 +5,7 @@ import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { CryptoModule } from '@rosreestr-extracts/crypto';
 import { DatabaseModule } from '@rosreestr-extracts/database';
-import { jwtConfig } from '@rosreestr-extracts/config';
+import { jwtConfig, appConfig } from '@rosreestr-extracts/config';
 import { UserEntity, RefreshTokenEntity } from '@rosreestr-extracts/entities';
 import { DalModule } from './dal/dal.module';
 
@@ -13,7 +13,7 @@ import { DalModule } from './dal/dal.module';
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
-      load: [jwtConfig],
+      load: [jwtConfig, appConfig],
       envFilePath: ['.env.local', '.env']
     }),
     JwtModule.registerAsync({

@@ -3,6 +3,7 @@
   "version": "0.0.0",
   "license": "MIT",
   "scripts": {
+    "dev": "nx run-many -t serve --all --watch --output-style=stream",
     "lint": "eslint \"{src,apps,libs,test}/**/*.ts\" --fix",
     "typeorm": "ts-node -r tsconfig-paths/register --project libs/database/tsconfig.migrations.json ./node_modules/typeorm/cli.js",
     "migration:generate": "npm run typeorm -- migration:generate -d libs/database/src/data-source.ts",
@@ -57,6 +58,7 @@
     "jest": "^30.0.2",
     "jest-environment-node": "^30.0.2",
     "jest-util": "^30.0.2",
+    "jsonc-eslint-parser": "^2.1.0",
     "nx": "21.6.3",
     "prettier": "^2.6.2",
     "ts-jest": "^29.4.0",

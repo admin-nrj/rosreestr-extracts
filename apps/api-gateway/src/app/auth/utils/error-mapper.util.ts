@@ -71,10 +71,12 @@ export function mapErrorCodeToHttpException(
  * @throws HttpException if error exists
  */
 export function throwIfError(response: {
-  error?: string;
-  errorCode?: ErrorCode;
+  error?: {
+    error?: string;
+    errorCode?: ErrorCode;
+  };
 }): void {
-  if (response.errorCode) {
-    throw mapErrorCodeToHttpException(response.errorCode, response.error);
+  if (response.error.errorCode) {
+    throw mapErrorCodeToHttpException(response.error.errorCode, response.error.error);
   }
 }

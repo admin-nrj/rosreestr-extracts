@@ -1,6 +1,6 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigType } from '@nestjs/config';
-import { AuthController } from './auth.controller';
+import { UsersController } from './users.controller';
 import { ClientsModule, Transport } from '@nestjs/microservices';
 import { AUTH_PACKAGE_NAME } from '@rosreestr-extracts/interfaces';
 import { AUTH_PROTO_PATH } from '@rosreestr-extracts/proto';
@@ -21,9 +21,9 @@ import { appConfig } from '@rosreestr-extracts/config';
             url: appCfg.urls.authService
           }
         })
-      }
-    ])
+      },
+    ]),
   ],
-  controllers: [AuthController],
+  controllers: [UsersController],
 })
-export class AuthModule { }
+export class UsersModule {}
