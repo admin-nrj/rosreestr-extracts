@@ -7,7 +7,7 @@ import {
   InternalServerErrorException,
   HttpException,
 } from '@nestjs/common';
-import { ErrorCode } from '@rosreestr-extracts/interfaces';
+import { ErrorCode, Error } from '@rosreestr-extracts/interfaces';
 import { UserEntity } from '@rosreestr-extracts/entities';
 
 export function getErrorName(error: unknown): string {
@@ -149,7 +149,7 @@ export function throwIfError(response: {
     errorCode?: ErrorCode;
   };
 }): void {
-  if (response.error.errorCode) {
+  if (response?.error?.errorCode) {
     throw mapErrorCodeToHttpException(response.error.errorCode, response.error.error);
   }
 }
@@ -157,9 +157,9 @@ export function throwIfError(response: {
 /**
  * Create error response with error code and message
  */
-export function createErrorResponse(errorCode: ErrorCode): { error: { error: string; errorCode: ErrorCode } } {
+export function createErrorResponse(errorCode: ErrorCode): { error: Error } {
   const error = {
-    error: getErrorText(errorCode),
+    message: getErrorText(errorCode),
     errorCode,
   }
   return { error };

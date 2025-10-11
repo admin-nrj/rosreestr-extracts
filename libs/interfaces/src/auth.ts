@@ -11,9 +11,27 @@ import { Error, User } from "./common";
 
 export const protobufPackage = "auth";
 
+export interface GenerateTokensRequest {
+  id: number;
+  email: string;
+  name: string;
+  role: string;
+}
+
+export interface GenerateTokensResponse {
+  accessToken?: string | undefined;
+  refreshToken?: string | undefined;
+  error?: Error | undefined;
+}
+
 export interface LoginRequest {
   email: string;
   password: string;
+}
+
+export interface LoginResponse {
+  user?: User | undefined;
+  error?: Error | undefined;
 }
 
 export interface RegisterRequest {
@@ -30,19 +48,11 @@ export interface RegisterResponse {
   error?: Error | undefined;
 }
 
-export interface LoginResponse {
-  accessToken?: string | undefined;
-  refreshToken?: string | undefined;
-  user?: User | undefined;
-  error?: Error | undefined;
-}
-
 export interface ValidateTokenRequest {
-  token: string;
+  email: string;
 }
 
 export interface ValidateTokenResponse {
-  valid: boolean;
   user?: User | undefined;
   error?: Error | undefined;
 }
@@ -67,6 +77,8 @@ export interface AuthServiceClient {
 
   validateToken(request: ValidateTokenRequest): Observable<ValidateTokenResponse>;
 
+  generateTokens(request: GenerateTokensRequest): Observable<GenerateTokensResponse>;
+
   refreshToken(request: RefreshTokenRequest): Observable<RefreshTokenResponse>;
 }
 
@@ -79,6 +91,10 @@ export interface AuthServiceController {
     request: ValidateTokenRequest,
   ): Promise<ValidateTokenResponse> | Observable<ValidateTokenResponse> | ValidateTokenResponse;
 
+  generateTokens(
+    request: GenerateTokensRequest,
+  ): Promise<GenerateTokensResponse> | Observable<GenerateTokensResponse> | GenerateTokensResponse;
+
   refreshToken(
     request: RefreshTokenRequest,
   ): Promise<RefreshTokenResponse> | Observable<RefreshTokenResponse> | RefreshTokenResponse;
@@ -86,7 +102,7 @@ export interface AuthServiceController {
 
 export function AuthServiceControllerMethods() {
   return function (constructor: Function) {
-    const grpcMethods: string[] = ["login", "register", "validateToken", "refreshToken"];
+    const grpcMethods: string[] = ["login", "register", "validateToken", "generateTokens", "refreshToken"];
     for (const method of grpcMethods) {
       const descriptor: any = Reflect.getOwnPropertyDescriptor(constructor.prototype, method);
       GrpcMethod("AuthService", method)(constructor.prototype[method], method, descriptor);

@@ -1,5 +1,3 @@
-import { UserRole as EntityUserRole } from '@rosreestr-extracts/entities';
-
 /**
  * JWT Access Token payload
  */
@@ -7,7 +5,7 @@ export interface JwtPayload {
   sub: number; // user ID
   email: string;
   name?: string;
-  role: EntityUserRole;
+  role: string;
 }
 
 /**

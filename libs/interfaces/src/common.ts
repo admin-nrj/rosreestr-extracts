@@ -22,7 +22,7 @@ export interface User {
 }
 
 export interface Error {
-  error?: string | undefined;
+  message?: string | undefined;
   errorCode?: ErrorCode | undefined;
 }
 

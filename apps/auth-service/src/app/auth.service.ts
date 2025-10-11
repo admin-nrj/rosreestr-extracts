@@ -7,6 +7,7 @@ import {
   RegisterResponse,
   ErrorCode,
   ValidateTokenResponse,
+  ValidateTokenRequest
 } from '@rosreestr-extracts/interfaces';
 import { CryptoService } from '@rosreestr-extracts/crypto';
 import { jwtConfig } from '@rosreestr-extracts/config';
@@ -25,14 +26,13 @@ import {
 
 @Injectable()
 export class AuthService {
-
   constructor(
     private readonly userRepository: UserRepository,
     private readonly refreshTokenRepository: RefreshTokenRepository,
     private readonly jwtService: JwtService,
     private readonly cryptoService: CryptoService,
     @Inject(jwtConfig.KEY)
-    private readonly jwt: ConfigType<typeof jwtConfig>,
+    private readonly jwt: ConfigType<typeof jwtConfig>
   ) {}
 
   /**
@@ -76,7 +76,7 @@ export class AuthService {
       return {
         accessToken: tokens.accessToken,
         refreshToken: tokens.refreshToken,
-        user: mapUserToProto(newUser)
+        user: mapUserToProto(newUser),
       };
     } catch (error) {
       console.log('[register] error: ', getErrorMessage(error));
@@ -95,12 +95,9 @@ export class AuthService {
         return createErrorResponse(ErrorCode.MISSING_REQUIRED_FIELD);
       }
 
-      const user = await this.validateUser(loginData.email)
+      const user = await this.validateUser(loginData.email);
 
-      const isPasswordValid = await this.cryptoService.comparePassword(
-        loginData.password,
-        user.passwordHash
-      );
+      const isPasswordValid = await this.cryptoService.comparePassword(loginData.password, user.passwordHash);
 
       if (!isPasswordValid) {
         return createErrorResponse(ErrorCode.INVALID_CREDENTIALS);
@@ -108,13 +105,7 @@ export class AuthService {
 
       await this.userRepository.updateLastLogin(user.id);
 
-      const tokens = await this.generateTokens(user);
-
-      return {
-        accessToken: tokens.accessToken,
-        refreshToken: tokens.refreshToken,
-        user: mapUserToProto(user)
-      };
+      return { user: mapUserToProto(user), };
     } catch (error) {
       let errorCode = ErrorCode.INTERNAL_ERROR;
       const errorMessage = getErrorMessage(error);
@@ -128,26 +119,14 @@ export class AuthService {
     }
   }
 
-  /**
-   * Validate JWT token and check user in database
-   * @param token - JWT access token
-   * @returns Validation result with user data or error
-   */
-  async validateToken(token: string): Promise<ValidateTokenResponse> {
+  async validateToken({ email }: ValidateTokenRequest): Promise<ValidateTokenResponse> {
     try {
-      const payload = this.jwtService.verify<JwtPayload>(token, {
-        secret: this.jwt.secret,
-      });
+      const user = await this.validateUser(email);
 
-      const user = await this.validateUser(payload.email)
-
-      return {
-        valid: true,
-        user: mapUserToProto(user)
-      };
+      return { user: mapUserToProto(user) };
     } catch (error) {
       let errorCode = ErrorCode.INVALID_TOKEN;
-      const errorMessage = getErrorMessage(error)
+      const errorMessage = getErrorMessage(error);
       if (getErrorName(error) === 'TokenExpiredError') {
         errorCode = ErrorCode.TOKEN_EXPIRED;
       } else if (errorMessage === 'User not found') {
@@ -156,10 +135,7 @@ export class AuthService {
         errorCode = ErrorCode.USER_NOT_ACTIVE;
       }
 
-      return {
-        valid: false,
-        ...createErrorResponse(errorCode)
-      };
+      return createErrorResponse(errorCode);
     }
   }
 
@@ -194,11 +170,11 @@ export class AuthService {
       return {
         accessToken: tokens.accessToken,
         refreshToken: tokens.refreshToken,
-        user: mapUserToProto(user)
+        user: mapUserToProto(user),
       };
     } catch (error) {
       let errorCode = ErrorCode.INVALID_TOKEN;
-      const errorMessage = getErrorMessage(error)
+      const errorMessage = getErrorMessage(error);
       if (getErrorName(error) === 'TokenExpiredError') {
         errorCode = ErrorCode.TOKEN_EXPIRED;
       } else if (errorMessage === 'User not found') {
@@ -230,7 +206,7 @@ export class AuthService {
     return user;
   }
 
-  private async generateTokens(user: UserEntity) {
+  async generateTokens(user: Pick<UserEntity, "id" | "email" | "name" | "role">) {
     const accessPayload: JwtPayload = {
       sub: user.id,
       email: user.email,

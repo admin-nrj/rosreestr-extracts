@@ -3,6 +3,8 @@ import { AuthService } from './auth.service';
 import {
   AuthServiceController,
   AuthServiceControllerMethods,
+  GenerateTokensRequest,
+  GenerateTokensResponse,
   LoginRequest,
   LoginResponse,
   RefreshTokenRequest,
@@ -10,13 +12,17 @@ import {
   RegisterRequest,
   RegisterResponse,
   ValidateTokenRequest,
-  ValidateTokenResponse
+  ValidateTokenResponse,
 } from '@rosreestr-extracts/interfaces';
+import { UserRole } from '@rosreestr-extracts/entities';
 
 @Controller()
 @AuthServiceControllerMethods()
 export class AuthController implements AuthServiceController {
   constructor(private readonly authService: AuthService) {}
+  generateTokens(request: GenerateTokensRequest): Promise<GenerateTokensResponse> {
+    return this.authService.generateTokens({ ...request, role: request.role as UserRole });
+  }
 
   async login(request: LoginRequest): Promise<LoginResponse> {
     return this.authService.login(request);
@@ -27,7 +33,7 @@ export class AuthController implements AuthServiceController {
   }
 
   async validateToken(request: ValidateTokenRequest): Promise<ValidateTokenResponse> {
-    return this.authService.validateToken(request.token);
+    return this.authService.validateToken(request);
   }
 
   async refreshToken(request: RefreshTokenRequest): Promise<RefreshTokenResponse> {

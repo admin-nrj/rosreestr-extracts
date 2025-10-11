@@ -8,13 +8,33 @@ service AuthService {
   rpc login (LoginRequest) returns (LoginResponse);
   rpc register (RegisterRequest) returns (RegisterResponse);
   rpc validateToken (ValidateTokenRequest) returns (ValidateTokenResponse);
+  rpc generateTokens (GenerateTokensRequest) returns (GenerateTokensResponse);
   rpc refreshToken (RefreshTokenRequest) returns (RefreshTokenResponse);
 };
+
+
+message GenerateTokensRequest {
+  int32 id = 1;
+  string email = 2;
+  string name = 3;
+  string role = 4;
+}
+message GenerateTokensResponse {
+  optional string access_token = 1;
+  optional string refresh_token = 2;
+  optional common.Error error = 3;
+}
+
 
 message LoginRequest {
   string email = 1;
   string password = 2;
 }
+message LoginResponse {
+  optional common.User user = 3;
+  optional common.Error error = 4;
+}
+
 
 message RegisterRequest {
   string email = 1;
@@ -22,7 +42,6 @@ message RegisterRequest {
   string name = 3;
   optional int32 pbx_extension = 4;
 }
-
 message RegisterResponse {
   optional string access_token = 1;
   optional string refresh_token = 2;
@@ -30,27 +49,19 @@ message RegisterResponse {
   optional common.Error error = 4;
 }
 
-message LoginResponse {
-  optional string access_token = 1;
-  optional string refresh_token = 2;
-  optional common.User user = 3;
-  optional common.Error error = 4;
-}
 
 message ValidateTokenRequest {
-  string token = 1;
+  string email = 1;
+}
+message ValidateTokenResponse {
+  optional common.User user = 1;
+  optional common.Error error = 2;
 }
 
-message ValidateTokenResponse {
-  bool valid = 1;
-  optional common.User user = 2;
-  optional common.Error error = 3;
-}
 
 message RefreshTokenRequest {
   string refresh_token = 1;
 }
-
 message RefreshTokenResponse {
   optional string access_token = 1;
   optional string refresh_token = 2;

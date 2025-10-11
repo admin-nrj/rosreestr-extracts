@@ -17,6 +17,6 @@ message User {
 }
 
 message Error {
-  optional string error = 1;
+  optional string message = 1;
   optional enums.ErrorCode error_code = 2;
 }

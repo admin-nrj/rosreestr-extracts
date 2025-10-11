@@ -1,9 +1,9 @@
 import { Module } from '@nestjs/common';
 import { AppController } from './app.controller';
-import { AppService } from './app.service';
 import { ConfigModule } from '@nestjs/config';
 import { jwtConfig, appConfig } from '@rosreestr-extracts/config';
 import { AuthModule } from './auth/auth.module';
+import { UsersModule } from './users/users.module';
 
 @Module({
   imports: [
@@ -12,9 +12,10 @@ import { AuthModule } from './auth/auth.module';
       load: [jwtConfig, appConfig],
       envFilePath: ['.env.local', '.env']
     }),
-    AuthModule
+    AuthModule,
+    UsersModule,
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [],
 })
 export class AppModule {}
