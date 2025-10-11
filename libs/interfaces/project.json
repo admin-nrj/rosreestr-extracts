@@ -4,6 +4,7 @@
   "sourceRoot": "libs/interfaces/src",
   "projectType": "library",
   "tags": [],
+  "implicitDependencies": ["proto"],
   "// targets": "to see all targets run: nx show project interfaces --web",
   "targets": {}
 }

@@ -54,6 +54,9 @@
       "cache": true,
       "dependsOn": ["^build"],
       "inputs": ["production", "^production"]
+    },
+    "build": {
+      "dependsOn": ["^generate"]
     }
   }
 }

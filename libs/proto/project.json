@@ -5,5 +5,15 @@
   "projectType": "library",
   "tags": [],
   "// targets": "to see all targets run: nx show project proto --web",
-  "targets": {}
+  "targets": {
+    "generate": {
+      "executor": "nx:run-commands",
+      "outputs": [
+        "{workspaceRoot}/libs/interfaces/src"
+      ],
+      "options": {
+        "command": "npx protoc --ts_proto_out=./libs/interfaces/src/ --proto_path=./libs/proto/src/ ./libs/proto/src/*.proto --ts_proto_opt=nestJs=true"
+      }
+    }
+  }
 }
