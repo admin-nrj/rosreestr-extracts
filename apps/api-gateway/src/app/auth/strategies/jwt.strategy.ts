@@ -7,7 +7,7 @@ import { jwtConfig } from '@rosreestr-extracts/config';
 import { AUTH_PACKAGE_NAME, AUTH_SERVICE_NAME, AuthServiceClient, User } from '@rosreestr-extracts/interfaces';
 import { ClientGrpc } from '@nestjs/microservices';
 import { firstValueFrom } from 'rxjs';
-import { throwIfError } from '@rosreestr-extracts/utils';
+import { throwOnGrpcError } from '@rosreestr-extracts/utils';
 
 export interface JwtPayload {
   sub: number;
@@ -35,9 +35,9 @@ export class JwtStrategy extends PassportStrategy(Strategy) implements OnModuleI
   }
 
   async validate(payload: JwtPayload): Promise<User> {
-    const response = await firstValueFrom(this.authService.validateToken({ email: payload.email }));
-
-    throwIfError(response);
+    const response = await firstValueFrom(
+      this.authService.validateToken({ email: payload.email }).pipe(throwOnGrpcError())
+    );
 
     return response.user;
   }
