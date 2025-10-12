@@ -9,19 +9,6 @@ import { UsersController } from './users.controller';
 @Module({
   imports: [
     ClientsModule.registerAsync([
-      // {
-      //   name: AUTH_PACKAGE_NAME,
-      //   imports: [ConfigModule],
-      //   inject: [appConfig.KEY],
-      //   useFactory: (appCfg: ConfigType<typeof appConfig>) => ({
-      //     transport: Transport.GRPC,
-      //     options: {
-      //       package: AUTH_PACKAGE_NAME,
-      //       protoPath: AUTH_PROTO_PATH,
-      //       url: appCfg.urls.authService
-      //     }
-      //   })
-      // },
       {
         name: USERS_PACKAGE_NAME,
         imports: [ConfigModule],

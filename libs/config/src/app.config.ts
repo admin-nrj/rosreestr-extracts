@@ -10,11 +10,13 @@ export default registerAs('app', () => ({
     apiGateway: parseInt(process.env.API_GATEWAY_PORT || '3003', 10),
     authService: parseInt(process.env.AUTH_SERVICE_PORT || '5001', 10),
     usersService: parseInt(process.env.USERS_SERVICE_PORT || '5002', 10),
+    ordersService: parseInt(process.env.ORDERS_SERVICE_PORT || '5003', 10),
   },
 
   // Service URLs for gRPC connections
   urls: {
-    authService: process.env.AUTH_SERVICE_URL || `localhost:${process.env.AUTH_SERVICE_PORT || '5001'}`,
-    usersService: process.env.USERS_SERVICE_URL || `localhost:${process.env.USERS_SERVICE_PORT || '5002'}`,
+    authService: `${process.env.AUTH_SERVICE_HOST || 'localhost'}:${process.env.AUTH_SERVICE_PORT || '5001'}`,
+    usersService: `${process.env.USERS_SERVICE_HOST || 'localhost'}:${process.env.USERS_SERVICE_PORT || '5002'}`,
+    ordersService: `${process.env.ORDERS_SERVICE_HOST || 'localhost'}:${process.env.ORDERS_SERVICE_PORT || '5003'}`,
   },
 }));

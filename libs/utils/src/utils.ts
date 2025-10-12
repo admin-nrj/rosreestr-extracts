@@ -157,9 +157,9 @@ export function throwIfError(response: {
 /**
  * Create error response with error code and message
  */
-export function createErrorResponse(errorCode: ErrorCode): { error: Error } {
+export function createErrorResponse(errorCode: ErrorCode, overrideMessage?: string): { error: Error } {
   const error = {
-    message: getErrorText(errorCode),
+    message: overrideMessage || getErrorText(errorCode),
     errorCode,
   }
   return { error };
@@ -182,4 +182,76 @@ export function mapUserToProto(entity: UserEntity) {
     payCount: entity.payCount,
     pbxExtension: entity.pbxExtension
   };
+}
+
+/**
+ * Timestamp-like object with seconds and nanos properties
+ */
+interface TimestampLike {
+  seconds: number;
+  nanos?: number;
+}
+
+/**
+ * Type guard to check if value is a Timestamp object
+ */
+function isTimestamp(value: unknown): value is TimestampLike {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    'seconds' in value &&
+    typeof (value as Record<string, unknown>).seconds === 'number'
+  );
+}
+
+/**
+ * Remove undefined fields from object
+ * Returns a new object without undefined values
+ * @param obj - Object to remove undefined fields from
+ * @returns New object without undefined fields
+ */
+export function removeUndefinedFields<T>(obj: Record<string, unknown>): T {
+  return Object.entries(obj).reduce<Record<string, unknown>>((acc, [key, value]) => {
+    if (value !== undefined) {
+      acc[key] = value;
+    }
+    return acc;
+  }, {}) as T;
+}
+
+/**
+ * Convert Timestamp fields to Date objects
+ * Recursively processes object and converts all Timestamp-like objects to Date
+ * @param obj - Object to convert Timestamp fields from
+ * @returns New object with Timestamps converted to Dates
+ */
+export function convertTimestampsToDate<T>(obj: Record<string, unknown>): T {
+  return Object.entries(obj).reduce<Record<string, unknown>>((acc, [key, value]) => {
+    if (isTimestamp(value)) {
+      acc[key] = new Date(value.seconds * 1000);
+    } else {
+      acc[key] = value;
+    }
+    return acc;
+  }, {}) as T;
+}
+
+/**
+ * Convert Date fields to Timestamp objects
+ * Processes object and converts all Date objects to Timestamp-like objects
+ * @param obj - Object to convert Date fields from
+ * @returns New object with Dates converted to Timestamps
+ */
+export function convertDatesToTimestamp<T>(obj: Record<string, unknown>): T {
+  return Object.entries(obj).reduce<Record<string, unknown>>((acc, [key, value]) => {
+    if (value instanceof Date) {
+      acc[key] = {
+        seconds: Math.floor(value.getTime() / 1000),
+        nanos: 0,
+      };
+    } else {
+      acc[key] = value;
+    }
+    return acc;
+  }, {}) as T;
 }
