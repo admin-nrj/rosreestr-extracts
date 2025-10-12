@@ -8,6 +8,10 @@
   "targets": {
     "generate": {
       "executor": "nx:run-commands",
+      "cache": true,
+      "inputs": [
+        "{projectRoot}/src/**/*.proto"
+      ],
       "outputs": [
         "{workspaceRoot}/libs/interfaces/src"
       ],
