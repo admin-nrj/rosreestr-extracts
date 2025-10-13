@@ -54,7 +54,7 @@
       "inputs": ["production", "^production"]
     },
     "build": {
-      "dependsOn": ["^build"]
+      "dependsOn": ["^generate"]
     }
   }
 }
