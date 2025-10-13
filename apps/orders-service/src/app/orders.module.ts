@@ -20,6 +20,7 @@ import { OrderRepository } from '../dal/repositories/order.repository';
     DatabaseModule.forRoot({
       entities: [OrderEntity],
     }),
+    DatabaseModule.forFeature([OrderEntity])
   ],
   controllers: [OrdersController],
   providers: [OrdersService, OrderRepository],
