@@ -1,17 +1,21 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsString, IsNotEmpty, IsOptional, IsBoolean, IsDateString, MaxLength } from 'class-validator';
+import { IsString, IsNotEmpty, IsOptional, IsBoolean, IsDateString, MaxLength, Matches } from 'class-validator';
 
 /**
  * DTO for creating a single order
  */
 export class CreateOrderDto {
   @ApiProperty({
-    description: 'Cadastral number',
+    description: 'Cadastral number in format XX:XX:XXXXXX(X):X(XXXXXXXX)',
     example: '77:01:0001001:1234',
+    pattern: '^([0-9]{2})[:]([0-9]{2})[:]([0-9]{6,7})[:]([0-9]{1,8})$',
   })
   @IsString()
   @IsNotEmpty()
   @MaxLength(255)
+  @Matches(/^([0-9]{2}):([0-9]{2}):([0-9]{6,7}):([0-9]{1,8})$/, {
+    message: 'Cadastral number must be in format XX:XX:XXXXXX(X):X(XXXXXXXX), e.g., 77:01:0001001:1234',
+  })
   cadNum: string;
 
   @ApiProperty({
