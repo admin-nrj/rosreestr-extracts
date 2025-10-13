@@ -1,14 +1,4 @@
-import {
-  Controller,
-  Get,
-  Post,
-  Patch,
-  Param,
-  Body,
-  UseGuards,
-  Inject,
-  ParseIntPipe
-} from '@nestjs/common';
+import { Controller, Get, Post, Patch, Param, Body, UseGuards, Inject, ParseIntPipe } from '@nestjs/common';
 import { ClientGrpc } from '@nestjs/microservices';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import {
@@ -21,14 +11,16 @@ import {
 } from '@rosreestr-extracts/interfaces';
 import { ApiTags, ApiBearerAuth, ApiParam } from '@nestjs/swagger';
 import { BaseGrpcController } from '../common/base-grpc.controller';
-import { CreateOrdersDto, UpdateOrderDto } from './dto';
+import { CreateOrderDto, UpdateOrderDto } from './dto';
 import { convertDatesToTimestamp } from '@rosreestr-extracts/utils';
+import { CurrentUser } from '../common/decorators/current-user.decorator';
+import { UserDto } from '../common/dto/response.dto';
 
 /**
  * Orders HTTP controller for API Gateway
  * Exposes REST endpoints that communicate with orders-service via gRPC
  */
-@ApiTags('orders')
+@ApiTags('Orders')
 @ApiBearerAuth()
 @Controller('orders')
 @UseGuards(JwtAuthGuard)
@@ -38,9 +30,12 @@ export class OrdersController extends BaseGrpcController<OrdersServiceClient> {
   }
 
   @Post()
-  async createOrders(@Body() body: CreateOrdersDto) {
+  async createOrders(@Body() body: CreateOrderDto[], @CurrentUser() user: UserDto) {
     const request: CreateOrdersRequest = {
-      orders: body.orders.map(order => convertDatesToTimestamp<Order>({ ...order })),
+      orders: body.map((order) => ({
+        ...convertDatesToTimestamp<Order, CreateOrderDto>(order),
+        userId: user.userId
+      })),
     };
 
     return this.callGrpc(this.service.createOrders(request));
@@ -55,8 +50,9 @@ export class OrdersController extends BaseGrpcController<OrdersServiceClient> {
   @ApiParam({ name: 'id', description: 'Order ID', type: 'number' })
   async getOrderById(@Param('id', ParseIntPipe) id: number) {
     const request: GetOrderRequest = { id };
+    const response = await this.callGrpc(this.service.getOrder(request))
 
-    return this.callGrpc(this.service.getOrder(request));
+    return response.order;
   }
 
   @Patch(':id')
@@ -65,8 +61,9 @@ export class OrdersController extends BaseGrpcController<OrdersServiceClient> {
     @Param('id', ParseIntPipe) id: number,
     @Body() body: UpdateOrderDto,
   ) {
-    const request = convertDatesToTimestamp<Order>({ ...body });
+    const request = convertDatesToTimestamp<Order, UpdateOrderDto>(body);
+    const response = await this.callGrpc(this.service.updateOrder({ ...request, id }));
 
-    return this.callGrpc(this.service.updateOrder(request));
+    return response.order;
   }
 }

@@ -1,7 +1,7 @@
 import { OnModuleInit } from '@nestjs/common';
 import { ClientGrpc } from '@nestjs/microservices';
 import { Observable, firstValueFrom } from 'rxjs';
-import { throwOnGrpcError } from '@rosreestr-extracts/utils';
+import { convertTimestampsToDate, throwOnGrpcError } from '@rosreestr-extracts/utils';
 
 /**
  * Base controller class for gRPC communication with automatic error handling
@@ -48,10 +48,18 @@ export abstract class BaseGrpcController<TService extends object = any> implemen
    * Combines firstValueFrom + throwOnGrpcError into single call
    *
    * @param observable - RxJS Observable from gRPC service
+   * @param dataFieldName
    * @returns Promise with the response data
    * @throws HttpException if gRPC response contains error
    */
-  protected async callGrpc<T>(observable: Observable<T>): Promise<T> {
-    return firstValueFrom(observable.pipe(throwOnGrpcError()));
+  protected async callGrpc<T>(observable: Observable<T>, dataFieldName = 'data'): Promise<T> {
+    const response = await firstValueFrom(observable.pipe(throwOnGrpcError()));
+    if (response[dataFieldName] && Array.isArray(response[dataFieldName])) {
+      response[dataFieldName] = response[dataFieldName].map(item => convertTimestampsToDate(item));
+
+      return response;
+    }
+
+    return convertTimestampsToDate(response);
   }
 }

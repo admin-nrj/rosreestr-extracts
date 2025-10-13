@@ -1,10 +1,15 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { IsString, IsOptional, IsBoolean, IsDateString, MaxLength } from 'class-validator';
+import { IsNotEmptyObject } from '../../common/validators';
 
 /**
  * DTO for updating an order
+ * At least one field must be provided for update
  */
 export class UpdateOrderDto {
+  // Hidden property used to validate that at least one field is provided
+  @IsNotEmptyObject()
+  private readonly _validateNotEmpty?: any;
   @ApiPropertyOptional({
     description: 'Rosreestr order number',
     example: 'RR-2024-123456',

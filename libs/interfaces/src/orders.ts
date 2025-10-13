@@ -13,13 +13,13 @@ import { Timestamp } from "./google/protobuf/timestamp";
 export const protobufPackage = "orders";
 
 export interface Order {
-  id: number;
+  id?: number | undefined;
   userId: number;
   cadNum: string;
   rosreestrOrderNum?: string | undefined;
   recipientName: string;
-  status: string;
-  isComplete: boolean;
+  status?: string | undefined;
+  isComplete?: boolean | undefined;
   comment?: string | undefined;
   rosreestrRegistrationStartedAt?: Timestamp | undefined;
   rosreestrRegisteredAt?: Timestamp | undefined;
@@ -32,7 +32,7 @@ export interface GetAllOrdersRequest {
 }
 
 export interface GetAllOrdersResponse {
-  orders: Order[];
+  data: Order[];
   error?: Error | undefined;
 }
 
@@ -41,7 +41,7 @@ export interface CreateOrdersRequest {
 }
 
 export interface CreateOrdersResponse {
-  orders: Order[];
+  data: Order[];
   error?: Error | undefined;
 }
 

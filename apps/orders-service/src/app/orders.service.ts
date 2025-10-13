@@ -14,7 +14,6 @@ import {
 import {
   createErrorResponse,
   getErrorMessage,
-  removeUndefinedFields,
   convertTimestampsToDate,
   convertDatesToTimestamp,
 } from '@rosreestr-extracts/utils';
@@ -32,18 +31,19 @@ export class OrdersService {
    */
   async createOrders(request: CreateOrdersRequest): Promise<CreateOrdersResponse> {
     try {
-      const ordersData = request.orders.map((order) => this.mapProtoToEntity(order));
+      const ordersData = request.orders
+        .map((order) => this.mapProtoToEntity(order));
       const createdOrders = await this.orderRepository.createMany(ordersData);
       // TODO send message to queues
 
       return {
-        orders: createdOrders.map((order) => this.mapEntityToProto(order)),
+        data: createdOrders.map((order) => this.mapEntityToProto(order)),
         error: undefined,
       };
     } catch (error) {
       Logger.error('[createOrders] error: ', getErrorMessage(error));
       return {
-        orders: [],
+        data: [],
         ...createErrorResponse(ErrorCode.INTERNAL_ERROR, 'Failed to create orders'),
       };
     }
@@ -57,13 +57,13 @@ export class OrdersService {
       const orders = await this.orderRepository.findAll();
 
       return {
-        orders: orders.map((order) => this.mapEntityToProto(order)),
+        data: orders.map((order) => this.mapEntityToProto(order)),
         error: undefined,
       };
     } catch (error) {
       Logger.error('[getAllOrders] error: ', getErrorMessage(error));
       return {
-        orders: [],
+        data: [],
         ...createErrorResponse(ErrorCode.INTERNAL_ERROR, 'Failed to fetch orders'),
       };
     }
@@ -96,9 +96,7 @@ export class OrdersService {
    */
   async updateOrder(request: UpdateOrderRequest): Promise<OrderResponse> {
     try {
-      const cleanedData = removeUndefinedFields<Partial<UpdateOrderRequest>>({ ...request });
-      const updateData = convertTimestampsToDate<Partial<OrderEntity>>(cleanedData);
-
+      const updateData = convertTimestampsToDate<Partial<OrderEntity>, UpdateOrderRequest>(request);
       const updatedOrder = await this.orderRepository.update(request.id, updateData);
 
       return {
@@ -115,14 +113,14 @@ export class OrdersService {
    * Map proto Order to OrderEntity
    */
   private mapProtoToEntity(protoOrder: Order): Partial<OrderEntity> {
-    const cleanedEntity = removeUndefinedFields<Order>({ ...protoOrder });
-    return convertTimestampsToDate<Partial<OrderEntity>>({ ...cleanedEntity });
+    // const cleanedEntity = removeUndefinedFields<Partial<Order>>(protoOrder);
+    return convertTimestampsToDate<OrderEntity, Order>(protoOrder);
   }
 
   /**
    * Map OrderEntity to proto Order
    */
   private mapEntityToProto(entity: OrderEntity): Order {
-    return convertDatesToTimestamp<Order>({ ...entity });
+    return convertDatesToTimestamp<Order, OrderEntity>(entity);
   }
 }

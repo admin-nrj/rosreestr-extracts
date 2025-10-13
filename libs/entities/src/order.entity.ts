@@ -22,7 +22,7 @@ export class OrderEntity extends BaseEntity {
   status: string;
 
   @Column({ name: 'is_complete', default: false })
-  isComplete: boolean;
+  isComplete?: boolean;
 
   @Column({ length: 255, nullable: true })
   comment?: string;

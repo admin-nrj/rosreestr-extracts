@@ -19,6 +19,9 @@ import { OrdersController } from './orders.controller';
             package: ORDERS_PACKAGE_NAME,
             protoPath: ORDERS_PROTO_PATH,
             url: appCfg.urls.ordersService,
+            loader: {
+              arrays: true,
+            },
           },
         }),
       },
