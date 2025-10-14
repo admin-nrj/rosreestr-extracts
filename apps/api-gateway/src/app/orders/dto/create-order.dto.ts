@@ -1,6 +1,6 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { IsString, IsNotEmpty, IsOptional, IsBoolean, IsDateString, MaxLength, Matches } from 'class-validator';
-
+import { Type } from 'class-transformer';
 /**
  * DTO for creating a single order
  */
@@ -16,6 +16,7 @@ export class CreateOrderDto {
   @Matches(/^([0-9]{2}):([0-9]{2}):([0-9]{6,7}):([0-9]{1,8})$/, {
     message: 'Cadastral number must be in format XX:XX:XXXXXX(X):X(XXXXXXXX), e.g., 77:01:0001001:1234',
   })
+  @Type(() => String)
   cadNum: string;
 
   @ApiProperty({
@@ -25,6 +26,7 @@ export class CreateOrderDto {
   @IsString()
   @IsNotEmpty()
   @MaxLength(255)
+  @Type(() => String)
   recipientName: string;
 
   @ApiPropertyOptional({
@@ -34,6 +36,7 @@ export class CreateOrderDto {
   @IsOptional()
   @IsString()
   @MaxLength(255)
+  @Type(() => String)
   rosreestrOrderNum?: string;
 
   @ApiPropertyOptional({
@@ -43,6 +46,7 @@ export class CreateOrderDto {
   @IsOptional()
   @IsString()
   @MaxLength(100)
+  @Type(() => String)
   status?: string;
 
   @ApiPropertyOptional({
@@ -52,6 +56,7 @@ export class CreateOrderDto {
   })
   @IsOptional()
   @IsBoolean()
+  @Type(() => Boolean)
   isComplete?: boolean;
 
   @ApiPropertyOptional({
@@ -60,6 +65,7 @@ export class CreateOrderDto {
   })
   @IsOptional()
   @IsString()
+  @Type(() => String)
   comment?: string;
 
   @ApiPropertyOptional({
@@ -68,6 +74,7 @@ export class CreateOrderDto {
   })
   @IsOptional()
   @IsDateString()
+  @Type(() => String)
   rosreestrRegistrationStartedAt?: string;
 
   @ApiPropertyOptional({
@@ -76,6 +83,7 @@ export class CreateOrderDto {
   })
   @IsOptional()
   @IsDateString()
+  @Type(() => String)
   rosreestrRegisteredAt?: string;
 
   @ApiPropertyOptional({
@@ -84,5 +92,6 @@ export class CreateOrderDto {
   })
   @IsOptional()
   @IsDateString()
+  @Type(() => String)
   completedAt?: string;
 }

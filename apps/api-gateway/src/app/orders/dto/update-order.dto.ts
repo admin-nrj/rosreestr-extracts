@@ -1,6 +1,7 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { IsString, IsOptional, IsBoolean, IsDateString, MaxLength } from 'class-validator';
 import { IsNotEmptyObject } from '../../common/validators';
+import { Type } from 'class-transformer';
 
 /**
  * DTO for updating an order
@@ -17,6 +18,7 @@ export class UpdateOrderDto {
   @IsOptional()
   @IsString()
   @MaxLength(255)
+  @Type(() => String)
   rosreestrOrderNum?: string;
 
   @ApiPropertyOptional({
@@ -26,6 +28,7 @@ export class UpdateOrderDto {
   @IsOptional()
   @IsString()
   @MaxLength(255)
+  @Type(() => String)
   recipientName?: string;
 
   @ApiPropertyOptional({
@@ -35,6 +38,7 @@ export class UpdateOrderDto {
   @IsOptional()
   @IsString()
   @MaxLength(100)
+  @Type(() => String)
   status?: string;
 
   @ApiPropertyOptional({
@@ -43,6 +47,7 @@ export class UpdateOrderDto {
   })
   @IsOptional()
   @IsBoolean()
+  @Type(() => Boolean)
   isComplete?: boolean;
 
   @ApiPropertyOptional({
@@ -51,6 +56,7 @@ export class UpdateOrderDto {
   })
   @IsOptional()
   @IsString()
+  @Type(() => String)
   comment?: string;
 
   @ApiPropertyOptional({
@@ -59,6 +65,7 @@ export class UpdateOrderDto {
   })
   @IsOptional()
   @IsDateString()
+  @Type(() => String)
   rosreestrRegistrationStartedAt?: string;
 
   @ApiPropertyOptional({
@@ -67,6 +74,7 @@ export class UpdateOrderDto {
   })
   @IsOptional()
   @IsDateString()
+  @Type(() => String)
   rosreestrRegisteredAt?: string;
 
   @ApiPropertyOptional({
@@ -75,5 +83,6 @@ export class UpdateOrderDto {
   })
   @IsOptional()
   @IsDateString()
+  @Type(() => String)
   completedAt?: string;
 }
