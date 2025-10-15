@@ -50,13 +50,16 @@ export class OrderProcessor implements OnModuleInit {
     const rosreestrUser = await this.rosreestrUserRepository.findByUsername(this.appCfg.worker.rosreestrUserName);
 
     if (!rosreestrUser) {
-      const errorMsg = `Rosreestr user '${this.appCfg.worker.rosreestrUserName}' not found in database. Service cannot start.`;
+      const errorMsg =
+        `Rosreestr user '${this.appCfg.worker.rosreestrUserName}' not found in database. Service cannot start.`;
       this.logger.error(errorMsg);
       throw new Error(errorMsg);
     }
 
     this.rosreestrUserId = rosreestrUser.id;
-    this.logger.log(`OrderProcessor initialized for Rosreestr User: ${rosreestrUser.username} (ID: ${rosreestrUser.id})`);
+    this.logger.log(
+      `OrderProcessor initialized for Rosreestr User: ${rosreestrUser.username} (ID: ${rosreestrUser.id})`
+    );
   }
 
   @Process({
