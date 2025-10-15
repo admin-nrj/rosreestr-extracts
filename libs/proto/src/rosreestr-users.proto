@@ -1,0 +1,66 @@
+syntax = "proto3";
+
+package rosreestr_users;
+
+import 'common.proto';
+
+service RosreestrUsersService {
+  rpc CreateRosreestrUser (CreateRosreestrUserRequest) returns (RosreestrUserResponse);
+  rpc GetRosreestrUser (GetRosreestrUserRequest) returns (RosreestrUserResponse);
+  rpc GetRosreestrUserByUsername (GetRosreestrUserByUsernameRequest) returns (RosreestrUserResponse);
+  rpc GetAllRosreestrUsers (GetAllRosreestrUsersRequest) returns (GetAllRosreestrUsersResponse);
+  rpc UpdateRosreestrUser (UpdateRosreestrUserRequest) returns (RosreestrUserResponse);
+  rpc DeleteRosreestrUser (DeleteRosreestrUserRequest) returns (DeleteRosreestrUserResponse);
+}
+
+message RosreestrUser {
+  optional int32 id = 1;
+  string username = 2;
+  string password_encrypted = 3;
+  string gu_login = 4;
+  optional string comment = 5;
+}
+
+message CreateRosreestrUserRequest {
+  string username = 1;
+  string password = 2;  // Plain password, will be encrypted
+  string gu_login = 3;
+  optional string comment = 4;
+}
+
+message GetRosreestrUserRequest {
+  int32 id = 1;
+}
+
+message GetRosreestrUserByUsernameRequest {
+  string username = 1;
+}
+
+message GetAllRosreestrUsersRequest {}
+
+message GetAllRosreestrUsersResponse {
+  repeated RosreestrUser data = 1;
+  optional common.Error error = 2;
+}
+
+message UpdateRosreestrUserRequest {
+  int32 id = 1;
+  optional string username = 2;
+  optional string password = 3;  // Plain password, will be encrypted if provided
+  optional string gu_login = 4;
+  optional string comment = 5;
+}
+
+message DeleteRosreestrUserRequest {
+  int32 id = 1;
+}
+
+message RosreestrUserResponse {
+  optional RosreestrUser rosreestr_user = 1;
+  optional common.Error error = 2;
+}
+
+message DeleteRosreestrUserResponse {
+  bool success = 1;
+  optional common.Error error = 2;
+}

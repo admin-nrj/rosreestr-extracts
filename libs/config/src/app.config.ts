@@ -11,6 +11,7 @@ export default registerAs('app', () => ({
     authService: parseInt(process.env.AUTH_SERVICE_PORT || '5001', 10),
     usersService: parseInt(process.env.USERS_SERVICE_PORT || '5002', 10),
     ordersService: parseInt(process.env.ORDERS_SERVICE_PORT || '5003', 10),
+    rosreestrUsersService: parseInt(process.env.ROSREESTR_USERS_SERVICE_PORT || '5004', 10),
   },
 
   // Service URLs for gRPC connections
@@ -18,6 +19,9 @@ export default registerAs('app', () => ({
     authService: `${process.env.AUTH_SERVICE_HOST || 'localhost'}:${process.env.AUTH_SERVICE_PORT || '5001'}`,
     usersService: `${process.env.USERS_SERVICE_HOST || 'localhost'}:${process.env.USERS_SERVICE_PORT || '5002'}`,
     ordersService: `${process.env.ORDERS_SERVICE_HOST || 'localhost'}:${process.env.ORDERS_SERVICE_PORT || '5003'}`,
+    rosreestrUsersService: `${process.env.ROSREESTR_USERS_SERVICE_HOST || 'localhost'}:${
+      process.env.ROSREESTR_USERS_SERVICE_PORT || '5004'
+    }`,
   },
 
   // Worker configuration

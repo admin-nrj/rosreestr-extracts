@@ -49,4 +49,8 @@ export class RosreestrUserRepository implements IRosreestrUserRepository {
     const count = await this.repository.count({ where: { username } });
     return count > 0;
   }
+
+  async findAll(): Promise<RosreestrUserEntity[]> {
+    return this.repository.find();
+  }
 }

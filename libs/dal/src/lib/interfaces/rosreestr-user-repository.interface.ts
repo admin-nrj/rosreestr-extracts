@@ -39,4 +39,9 @@ export interface IRosreestrUserRepository {
    * Check if username exists
    */
   usernameExists(username: string): Promise<boolean>;
+
+  /**
+   * Find all Rosreestr users
+   */
+  findAll(): Promise<RosreestrUserEntity[]>;
 }

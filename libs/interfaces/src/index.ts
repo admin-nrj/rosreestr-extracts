@@ -28,3 +28,20 @@ export {
   OrdersServiceController,
   OrdersServiceControllerMethods
 } from './orders';
+export {
+  RosreestrUser,
+  CreateRosreestrUserRequest,
+  GetRosreestrUserRequest,
+  GetRosreestrUserByUsernameRequest,
+  GetAllRosreestrUsersRequest,
+  GetAllRosreestrUsersResponse,
+  UpdateRosreestrUserRequest,
+  DeleteRosreestrUserRequest,
+  RosreestrUserResponse,
+  DeleteRosreestrUserResponse,
+  ROSREESTR_USERS_SERVICE_NAME,
+  ROSREESTR_USERS_PACKAGE_NAME,
+  RosreestrUsersServiceClient,
+  RosreestrUsersServiceController,
+  RosreestrUsersServiceControllerMethods
+} from './rosreestr-users';

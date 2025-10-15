@@ -7,10 +7,10 @@ import {
   InternalServerErrorException,
   HttpException,
 } from '@nestjs/common';
-import { ErrorCode, Error } from '@rosreestr-extracts/interfaces';
+import { ErrorCode, Error as ProtoError } from '@rosreestr-extracts/interfaces';
 
 export function getErrorName(error: unknown): string {
-  if (error instanceof Error) return error.message;
+  if (error instanceof Error) return error.name;
 
   if (hasStringProperty(error, 'name')) {
     return error.name;
@@ -23,11 +23,11 @@ export function getErrorMessage(error: unknown): string {
   if (error instanceof Error) return error.message;
   if (typeof error === 'string') return error;
 
+  try {
   if (hasStringProperty(error, 'message')) {
     return error.message;
   }
 
-  try {
     return JSON.stringify(error);
   } catch {
     return 'Unknown error occurred.';
@@ -166,7 +166,7 @@ export function throwIfError(response: {
 /**
  * Create error response with error code and message
  */
-export function createErrorResponse(errorCode: ErrorCode, overrideMessage?: string): { error: Error } {
+export function createErrorResponse(errorCode: ErrorCode, overrideMessage?: string): { error: ProtoError } {
   const error = {
     message: overrideMessage || getErrorText(errorCode),
     errorCode,

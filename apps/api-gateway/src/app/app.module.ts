@@ -5,6 +5,7 @@ import { jwtConfig, appConfig } from '@rosreestr-extracts/config';
 import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
 import { OrdersModule } from './orders/orders.module';
+import { RosreestrUsersModule } from './rosreestr-users/rosreestr-users.module';
 
 @Module({
   imports: [
@@ -16,6 +17,7 @@ import { OrdersModule } from './orders/orders.module';
     AuthModule,
     UsersModule,
     OrdersModule,
+    RosreestrUsersModule,
   ],
   controllers: [AppController],
   providers: [],
