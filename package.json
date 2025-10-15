@@ -9,7 +9,7 @@
     "typeorm": "ts-node -r tsconfig-paths/register --project libs/database/tsconfig.migrations.json ./node_modules/typeorm/cli.js",
     "migration:generate": "npm run typeorm -- migration:generate -d libs/database/src/data-source.ts",
     "migration:create": "npm run typeorm -- migration:create",
-    "migration:run": "npm run typeorm -- migration:run -d libs/database/src/data-source.ts",
+    "migration:up": "npm run typeorm -- migration:run -d libs/database/src/data-source.ts",
     "migration:revert": "npm run typeorm -- migration:revert -d libs/database/src/data-source.ts",
     "migration:show": "npm run typeorm -- migration:show -d libs/database/src/data-source.ts",
     "proto:generate": "npx protoc --ts_proto_out=./libs/interfaces/src/ --proto_path=./libs/proto/src/ ./libs/proto/src/*.proto --ts_proto_opt=nestJs=true"

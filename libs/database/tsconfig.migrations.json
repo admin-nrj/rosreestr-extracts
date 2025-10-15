@@ -10,7 +10,16 @@
     "outDir": "./dist",
     "baseUrl": "../../",
     "paths": {
-      "@rosreestr-extracts/entities": ["libs/entities/src/index.ts"]
+      "@rosreestr-extracts/config": ["libs/config/src/index.ts"],
+      "@rosreestr-extracts/constants": ["libs/constants/src/index.ts"],
+      "@rosreestr-extracts/crypto": ["libs/crypto/src/index.ts"],
+      "@rosreestr-extracts/dal": ["libs/dal/src/index.ts"],
+      "@rosreestr-extracts/database": ["libs/database/src/index.ts"],
+      "@rosreestr-extracts/entities": ["libs/entities/src/index.ts"],
+      "@rosreestr-extracts/interfaces": ["libs/interfaces/src/index.ts"],
+      "@rosreestr-extracts/proto": ["libs/proto/src/index.ts"],
+      "@rosreestr-extracts/queue": ["libs/queue/src/index.ts"],
+      "@rosreestr-extracts/utils": ["libs/utils/src/index.ts"]
     }
   },
   "include": ["src/**/*"],

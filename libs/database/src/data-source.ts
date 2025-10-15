@@ -1,5 +1,10 @@
 import { DataSource, DataSourceOptions } from 'typeorm';
-import { UserEntity, RefreshTokenEntity } from '@rosreestr-extracts/entities';
+import {
+  UserEntity,
+  RefreshTokenEntity,
+  OrderEntity,
+  RosreestrUserEntity,
+} from '@rosreestr-extracts/entities';
 import * as dotenv from 'dotenv';
 
 // Load environment variables
@@ -16,7 +21,7 @@ export const dataSourceOptions: DataSourceOptions = {
   username: process.env.DB_USERNAME || 'postgres',
   password: process.env.DB_PASSWORD || 'postgres',
   database: process.env.DB_NAME || 'rosreestr_extracts',
-  entities: [UserEntity, RefreshTokenEntity],
+  entities: [UserEntity, RefreshTokenEntity, OrderEntity, RosreestrUserEntity],
   migrations: ['libs/database/src/migrations/*.ts'],
   synchronize: false, // Always false for production
   logging: process.env.DB_LOGGING === 'true',

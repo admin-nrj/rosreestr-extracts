@@ -39,7 +39,7 @@ export class CreateOrdersTable1760273299649 implements MigrationInterface {
                         name: 'status',
                         type: 'varchar',
                         length: '255',
-                        default: "'Добавлен в очередь'",
+                        default: 'Добавлен в очередь',
                     },
                     {
                         name: 'is_complete',
