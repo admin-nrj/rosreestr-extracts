@@ -1,5 +1,6 @@
 import { Entity, Column } from 'typeorm';
 import { BaseEntity } from './base.entity';
+import { OrderStatus } from '@rosreestr-extracts/constants';
 
 /**
  * Order entity representing Rosreestr extract orders
@@ -18,7 +19,15 @@ export class OrderEntity extends BaseEntity {
   @Column({ name: 'recipient_name', length: 255 })
   recipientName: string;
 
-  @Column({ length: 255, default: 'Добавлен в очередь' })
+  @Column({
+    name: 'rosreestr_user_id',
+    type: 'integer',
+    nullable: true,
+    comment: 'ID пользователя Росреестра, который обрабатывает заказ'
+  })
+  rosreestrUserId?: number;
+
+  @Column({ length: 255, default: OrderStatus.QUEUED })
   status: string;
 
   @Column({ name: 'is_complete', default: false })

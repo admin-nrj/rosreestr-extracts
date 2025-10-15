@@ -33,7 +33,7 @@ export class UpdateOrderDto {
 
   @ApiPropertyOptional({
     description: 'Order status',
-    example: 'in_progress',
+    example: 'В обработке',
   })
   @IsOptional()
   @IsString()

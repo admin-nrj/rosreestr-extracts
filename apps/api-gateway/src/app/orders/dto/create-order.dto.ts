@@ -41,7 +41,7 @@ export class CreateOrderDto {
 
   @ApiPropertyOptional({
     description: 'Order status',
-    example: 'pending',
+    example: 'Добавлен в очередь',
   })
   @IsOptional()
   @IsString()

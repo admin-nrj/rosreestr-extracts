@@ -9,6 +9,7 @@ import { ConfigType } from '@nestjs/config';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { AppModule } from './app/app.module';
 import { appConfig } from '@rosreestr-extracts/config';
+import { setupGracefulShutdown } from '@rosreestr-extracts/utils';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -17,7 +18,7 @@ async function bootstrap() {
     new ValidationPipe({
       whitelist: true,
       transform: true,
-      stopAtFirstError: true
+      stopAtFirstError: true,
     })
   );
 
@@ -38,12 +39,14 @@ async function bootstrap() {
   SwaggerModule.setup('api/docs', app, document);
 
   await app.listen(port);
-  Logger.log(
-    `🚀 API Gateway is running on: http://localhost:${port}/${globalPrefix}`
-  );
-  Logger.log(
-    `📚 Swagger documentation available at: http://localhost:${port}/${globalPrefix}/docs`
-  );
+  Logger.log(`🚀 API Gateway is running on: http://localhost:${port}/${globalPrefix}`);
+  Logger.log(`📚 Swagger documentation available at: http://localhost:${port}/${globalPrefix}/docs`);
+
+  // Setup graceful shutdown
+  setupGracefulShutdown(app, 'API Gateway');
 }
 
-bootstrap();
+bootstrap().catch((err) => {
+  console.error('Failed to start API Gateway:', err);
+  process.exit(1);
+});

@@ -11,6 +11,7 @@ import { MicroserviceOptions, Transport } from '@nestjs/microservices';
 import { AUTH_PACKAGE_NAME } from '@rosreestr-extracts/interfaces';
 import { AUTH_PROTO_PATH } from '@rosreestr-extracts/proto';
 import { appConfig } from '@rosreestr-extracts/config';
+import { setupGracefulShutdown } from '@rosreestr-extracts/utils';
 
 async function bootstrap() {
   const appContext = await NestFactory.createApplicationContext(AuthModule);
@@ -29,6 +30,13 @@ async function bootstrap() {
 
   await app.listen();
   Logger.log(`🚀 Auth service is running on gRPC ${url}`);
+
+  // Setup graceful shutdown
+  setupGracefulShutdown(app, 'Auth Service');
 }
 
-bootstrap().catch(err => { throw err });
+bootstrap().catch((err) => {
+  console.error('Failed to start Auth service:', err);
+  process.exit(1);
+});
+

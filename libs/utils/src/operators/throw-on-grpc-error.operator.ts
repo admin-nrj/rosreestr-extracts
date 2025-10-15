@@ -1,5 +1,5 @@
 import { map, type OperatorFunction } from 'rxjs';
-import { mapErrorCodeToHttpException } from '../utils';
+import { mapErrorCodeToHttpException } from '../error-handling.utils';
 import { ErrorCode } from '@rosreestr-extracts/interfaces';
 
 /**

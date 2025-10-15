@@ -11,6 +11,7 @@ import { OrdersModule } from './app/orders.module';
 import { ORDERS_PACKAGE_NAME } from '@rosreestr-extracts/interfaces';
 import { ORDERS_PROTO_PATH } from '@rosreestr-extracts/proto';
 import { appConfig } from '@rosreestr-extracts/config';
+import { setupGracefulShutdown } from '@rosreestr-extracts/utils';
 
 async function bootstrap() {
   const appContext = await NestFactory.createApplicationContext(OrdersModule);
@@ -32,6 +33,12 @@ async function bootstrap() {
 
   await app.listen();
   Logger.log(`🚀 Orders service is running on gRPC ${url}`);
+
+  // Setup graceful shutdown
+  setupGracefulShutdown(app, 'Orders Service');
 }
 
-bootstrap().catch(err => { throw err });
+bootstrap().catch((err) => {
+  console.error('Failed to start Orders service:', err);
+  process.exit(1);
+});

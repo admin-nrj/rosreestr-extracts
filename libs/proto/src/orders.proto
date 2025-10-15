@@ -18,14 +18,15 @@ message Order {
   string cad_num = 3;
   optional string rosreestr_order_num = 4;
   string recipient_name = 5;
-  optional string status = 6;
-  optional bool is_complete = 7;
-  optional string comment = 8;
-  optional google.protobuf.Timestamp rosreestr_registration_started_at = 9;
-  optional google.protobuf.Timestamp rosreestr_registered_at = 10;
-  optional google.protobuf.Timestamp completed_at = 11;
-  optional google.protobuf.Timestamp createdAt = 12;
-  optional google.protobuf.Timestamp updatedAt = 13;
+  optional int32 rosreestr_user_id = 6;
+  optional string status = 7;
+  optional bool is_complete = 8;
+  optional string comment = 9;
+  optional google.protobuf.Timestamp rosreestr_registration_started_at = 10;
+  optional google.protobuf.Timestamp rosreestr_registered_at = 11;
+  optional google.protobuf.Timestamp completed_at = 12;
+  optional google.protobuf.Timestamp createdAt = 13;
+  optional google.protobuf.Timestamp updatedAt = 14;
 }
 
 message GetAllOrdersRequest {}
@@ -54,10 +55,11 @@ message UpdateOrderRequest {
   int32 id = 1;
   optional string rosreestr_order_num = 2;
   optional string recipient_name = 3;
-  optional string status = 4;
-  optional bool is_complete = 5;
-  optional string comment = 6;
-  optional google.protobuf.Timestamp rosreestr_registration_started_at = 7;
-  optional google.protobuf.Timestamp rosreestr_registered_at = 8;
-  optional google.protobuf.Timestamp completed_at = 9;
+  optional int32 rosreestr_user_id = 4;
+  optional string status = 5;
+  optional bool is_complete = 6;
+  optional string comment = 7;
+  optional google.protobuf.Timestamp rosreestr_registration_started_at = 8;
+  optional google.protobuf.Timestamp rosreestr_registered_at = 9;
+  optional google.protobuf.Timestamp completed_at = 10;
 }

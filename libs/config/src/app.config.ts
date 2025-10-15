@@ -19,4 +19,9 @@ export default registerAs('app', () => ({
     usersService: `${process.env.USERS_SERVICE_HOST || 'localhost'}:${process.env.USERS_SERVICE_PORT || '5002'}`,
     ordersService: `${process.env.ORDERS_SERVICE_HOST || 'localhost'}:${process.env.ORDERS_SERVICE_PORT || '5003'}`,
   },
+
+  // Worker configuration
+  worker: {
+    rosreestrUserName: process.env.ROSREESTR_USER_NAME || '',
+  },
 }));

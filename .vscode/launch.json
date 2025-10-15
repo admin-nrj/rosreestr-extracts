@@ -15,6 +15,21 @@
       "skipFiles": ["<node_internals>/**"],
       "sourceMaps": true,
       "outFiles": ["${workspaceFolder}/apps/orders-service/dist/**/*.(m|c|)js", "!**/node_modules/**"]
+    },
+    {
+      "type": "node",
+      "request": "launch",
+      "name": "Debug order-processing-worker with Nx",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": ["nx", "serve", "order-processing-worker"],
+      "env": {
+        "NODE_OPTIONS": "--inspect=9230"
+      },
+      "console": "integratedTerminal",
+      "internalConsoleOptions": "neverOpen",
+      "skipFiles": ["<node_internals>/**"],
+      "sourceMaps": true,
+      "outFiles": ["${workspaceFolder}/apps/order-processing-worker/dist/**/*.(m|c|)js", "!**/node_modules/**"]
     }
   ]
 }

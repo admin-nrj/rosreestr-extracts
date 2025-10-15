@@ -1,0 +1,236 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:16-alpine
+    container_name: rosreestr-postgres
+    environment:
+      POSTGRES_DB: ${DB_NAME:-rosreestr_extracts}
+      POSTGRES_USER: ${DB_USERNAME:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres}
+    ports:
+      - "${DB_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME:-postgres}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - rosreestr-network
+
+  # Redis for Bull queues
+  redis:
+    image: redis:7-alpine
+    container_name: rosreestr-redis
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    networks:
+      - rosreestr-network
+
+  # Auth Service (gRPC)
+  auth-service:
+    build:
+      context: .
+      dockerfile: apps/auth-service/Dockerfile
+    container_name: rosreestr-auth-service
+    environment:
+      NODE_ENV: ${NODE_ENV:-production}
+      AUTH_SERVICE_PORT: ${AUTH_SERVICE_PORT:-5001}
+      DB_HOST: postgres
+      DB_PORT: ${DB_PORT:-5432}
+      DB_USERNAME: ${DB_USERNAME:-postgres}
+      DB_PASSWORD: ${DB_PASSWORD:-postgres}
+      DB_NAME: ${DB_NAME:-rosreestr_extracts}
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-1d}
+      JWT_REFRESH_EXPIRES_IN: ${JWT_REFRESH_EXPIRES_IN:-14d}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - rosreestr-network
+
+  # Users Service (gRPC)
+  users-service:
+    build:
+      context: .
+      dockerfile: apps/users-service/Dockerfile
+    container_name: rosreestr-users-service
+    environment:
+      NODE_ENV: ${NODE_ENV:-production}
+      USERS_SERVICE_PORT: ${USERS_SERVICE_PORT:-5002}
+      DB_HOST: postgres
+      DB_PORT: ${DB_PORT:-5432}
+      DB_USERNAME: ${DB_USERNAME:-postgres}
+      DB_PASSWORD: ${DB_PASSWORD:-postgres}
+      DB_NAME: ${DB_NAME:-rosreestr_extracts}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - rosreestr-network
+
+  # Orders Service (gRPC + Bull Producer)
+  orders-service:
+    build:
+      context: .
+      dockerfile: apps/orders-service/Dockerfile
+    container_name: rosreestr-orders-service
+    environment:
+      NODE_ENV: ${NODE_ENV:-production}
+      ORDERS_SERVICE_PORT: ${ORDERS_SERVICE_PORT:-5003}
+      DB_HOST: postgres
+      DB_PORT: ${DB_PORT:-5432}
+      DB_USERNAME: ${DB_USERNAME:-postgres}
+      DB_PASSWORD: ${DB_PASSWORD:-postgres}
+      DB_NAME: ${DB_NAME:-rosreestr_extracts}
+      REDIS_HOST: redis
+      REDIS_PORT: ${REDIS_PORT:-6379}
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - rosreestr-network
+
+  # API Gateway (HTTP REST)
+  api-gateway:
+    build:
+      context: .
+      dockerfile: apps/api-gateway/Dockerfile
+    container_name: rosreestr-api-gateway
+    environment:
+      NODE_ENV: ${NODE_ENV:-production}
+      API_GATEWAY_PORT: ${API_GATEWAY_PORT:-3003}
+      AUTH_SERVICE_HOST: auth-service
+      AUTH_SERVICE_PORT: ${AUTH_SERVICE_PORT:-5001}
+      USERS_SERVICE_HOST: users-service
+      USERS_SERVICE_PORT: ${USERS_SERVICE_PORT:-5002}
+      ORDERS_SERVICE_HOST: orders-service
+      ORDERS_SERVICE_PORT: ${ORDERS_SERVICE_PORT:-5003}
+      JWT_SECRET: ${JWT_SECRET}
+    ports:
+      - "${API_GATEWAY_PORT:-3003}:3003"
+    depends_on:
+      - auth-service
+      - users-service
+      - orders-service
+    networks:
+      - rosreestr-network
+
+  # Order Processing Worker 1
+  order-worker-1:
+    build:
+      context: .
+      dockerfile: apps/order-processing-worker/Dockerfile
+    container_name: rosreestr-order-worker-1
+    environment:
+      NODE_ENV: ${NODE_ENV:-production}
+      ROSREESTR_USER_NAME: 'SFedotova'
+      ROSREESTR_CRYPTO_SECRET: ${ROSREESTR_CRYPTO_SECRET}
+      DB_HOST: postgres
+      DB_PORT: ${DB_PORT:-5432}
+      DB_USERNAME: ${DB_USERNAME:-postgres}
+      DB_PASSWORD: ${DB_PASSWORD:-postgres}
+      DB_NAME: ${DB_NAME:-rosreestr_extracts}
+      REDIS_HOST: redis
+      REDIS_PORT: ${REDIS_PORT:-6379}
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-}
+      BCRYPT_SALT_ROUNDS: ${BCRYPT_SALT_ROUNDS:-10}
+      ORDERS_SERVICE_HOST: orders-service
+      ORDERS_SERVICE_PORT: ${ORDERS_SERVICE_PORT:-5003}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      orders-service:
+        condition: service_started
+    restart: unless-stopped
+    networks:
+      - rosreestr-network
+
+  # Order Processing Worker 2
+  order-worker-2:
+    build:
+      context: .
+      dockerfile: apps/order-processing-worker/Dockerfile
+    container_name: rosreestr-order-worker-2
+    environment:
+      NODE_ENV: ${NODE_ENV:-production}
+      ROSREESTR_USER_NAME: 'ABudenas'
+      ROSREESTR_CRYPTO_SECRET: ${ROSREESTR_CRYPTO_SECRET}
+      DB_HOST: postgres
+      DB_PORT: ${DB_PORT:-5432}
+      DB_USERNAME: ${DB_USERNAME:-postgres}
+      DB_PASSWORD: ${DB_PASSWORD:-postgres}
+      DB_NAME: ${DB_NAME:-rosreestr_extracts}
+      REDIS_HOST: redis
+      REDIS_PORT: ${REDIS_PORT:-6379}
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-}
+      BCRYPT_SALT_ROUNDS: ${BCRYPT_SALT_ROUNDS:-10}
+      ORDERS_SERVICE_HOST: orders-service
+      ORDERS_SERVICE_PORT: ${ORDERS_SERVICE_PORT:-5003}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      orders-service:
+        condition: service_started
+    restart: unless-stopped
+    networks:
+      - rosreestr-network
+
+  # Order Processing Worker 3
+  order-worker-3:
+    build:
+      context: .
+      dockerfile: apps/order-processing-worker/Dockerfile
+    container_name: rosreestr-order-worker-3
+    environment:
+      NODE_ENV: ${NODE_ENV:-production}
+      ROSREESTR_USER_NAME: 'AKirakosyan'
+      ROSREESTR_CRYPTO_SECRET: ${ROSREESTR_CRYPTO_SECRET}
+      DB_HOST: postgres
+      DB_PORT: ${DB_PORT:-5432}
+      DB_USERNAME: ${DB_USERNAME:-postgres}
+      DB_PASSWORD: ${DB_PASSWORD:-postgres}
+      DB_NAME: ${DB_NAME:-rosreestr_extracts}
+      REDIS_HOST: redis
+      REDIS_PORT: ${REDIS_PORT:-6379}
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-}
+      BCRYPT_SALT_ROUNDS: ${BCRYPT_SALT_ROUNDS:-10}
+      ORDERS_SERVICE_HOST: orders-service
+      ORDERS_SERVICE_PORT: ${ORDERS_SERVICE_PORT:-5003}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      orders-service:
+        condition: service_started
+    restart: unless-stopped
+    networks:
+      - rosreestr-network
+
+volumes:
+  postgres_data:
+  redis_data:
+
+networks:
+  rosreestr-network:
+    driver: bridge

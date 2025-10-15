@@ -1,4 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { InjectQueue } from '@nestjs/bull';
+import { Queue } from 'bull';
 import { OrderRepository } from '../dal/repositories/order.repository';
 import { OrderEntity } from '@rosreestr-extracts/entities';
 import {
@@ -17,6 +19,12 @@ import {
   convertTimestampsToDate,
   convertDatesToTimestamp,
 } from '@rosreestr-extracts/utils';
+import {
+  ORDER_QUEUE_NAME,
+  ORDER_JOB_NAMES,
+  QUEUE_CONFIG,
+  OrderJobData
+} from '@rosreestr-extracts/queue';
 
 /**
  * Orders service
@@ -24,7 +32,10 @@ import {
  */
 @Injectable()
 export class OrdersService {
-  constructor(private readonly orderRepository: OrderRepository) {}
+  constructor(
+    private readonly orderRepository: OrderRepository,
+    @InjectQueue(ORDER_QUEUE_NAME) private readonly orderQueue: Queue<OrderJobData>
+  ) {}
 
   /**
    * Create multiple orders
@@ -34,7 +45,23 @@ export class OrdersService {
       const ordersData = request.orders
         .map((order) => this.mapProtoToEntity(order));
       const createdOrders = await this.orderRepository.createMany(ordersData);
-      // TODO send message to queues
+
+      // Send each order to the processing queue
+      for (const order of createdOrders) {
+        const jobData: OrderJobData = {
+          orderId: order.id,
+          cadNum: order.cadNum,
+          userId: order.userId,
+        };
+
+        await this.orderQueue.add(
+          ORDER_JOB_NAMES.PROCESS_ORDER,
+          jobData,
+          QUEUE_CONFIG.DEFAULT_JOB_OPTIONS
+        );
+
+        Logger.log(`[createOrders] Order ${order.id} added to queue`);
+      }
 
       return {
         data: createdOrders.map((order) => this.mapEntityToProto(order)),

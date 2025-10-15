@@ -18,6 +18,7 @@ export interface Order {
   cadNum: string;
   rosreestrOrderNum?: string | undefined;
   recipientName: string;
+  rosreestrUserId?: number | undefined;
   status?: string | undefined;
   isComplete?: boolean | undefined;
   comment?: string | undefined;
@@ -58,6 +59,7 @@ export interface UpdateOrderRequest {
   id: number;
   rosreestrOrderNum?: string | undefined;
   recipientName?: string | undefined;
+  rosreestrUserId?: number | undefined;
   status?: string | undefined;
   isComplete?: boolean | undefined;
   comment?: string | undefined;

@@ -8,8 +8,6 @@ import {
   HttpException,
 } from '@nestjs/common';
 import { ErrorCode, Error } from '@rosreestr-extracts/interfaces';
-import { UserEntity } from '@rosreestr-extracts/entities';
-import Long from 'long';
 
 export function getErrorName(error: unknown): string {
   if (error instanceof Error) return error.message;
@@ -34,6 +32,16 @@ export function getErrorMessage(error: unknown): string {
   } catch {
     return 'Unknown error occurred.';
   }
+}
+
+export function getErrorStack(error: unknown): string | undefined {
+  if (error instanceof Error) return error.stack;
+
+  if (hasStringProperty(error, 'stack')) {
+    return error.stack;
+  }
+
+  return undefined;
 }
 
 function hasStringProperty<K extends string>(x: unknown, prop: K): x is Record<K, string> {
@@ -164,165 +172,4 @@ export function createErrorResponse(errorCode: ErrorCode, overrideMessage?: stri
     errorCode,
   }
   return { error };
-}
-
-/**
- * Map UserEntity to proto User message
- * @param entity - User entity from database
- * @returns Proto User message without sensitive data
- */
-export function mapUserToProto(entity: UserEntity) {
-  return {
-    userId: entity.id,
-    email: entity.email,
-    name: entity.name || '',
-    role: entity.role,
-    isActive: entity.isActive,
-    lastLoginAt: entity.lastLoginAt?.toISOString() || '',
-    emailVerified: entity.emailVerified,
-    payCount: entity.payCount,
-    pbxExtension: entity.pbxExtension
-  };
-}
-
-/**
- * Timestamp-like object with seconds and nanos properties
- */
-interface TimestampLike {
-  seconds: number;
-  nanos?: number;
-}
-
-/**
- * Type guard to check if value is a Timestamp object
- * Handles both regular numbers and Long objects from protobuf
- */
-function isTimestamp(value: unknown): value is TimestampLike {
-  if (typeof value !== 'object' || value === null || !('seconds' in value)) {
-    return false;
-  }
-
-  const seconds = (value as Record<string, unknown>).seconds;
-
-  // Check if seconds is a number
-  if (typeof seconds === 'number') {
-    return true;
-  }
-
-  // Check if seconds is a Long object (from protobuf)
-  return typeof seconds === 'object' &&
-    seconds !== null &&
-    'low' in seconds &&
-    'high' in seconds;
-}
-
-/**
- * Remove undefined and null fields from object
- * Returns a new object without undefined or null values
- * @param obj - Object to remove undefined/null fields from
- * @returns New object without undefined/null fields
- */
-export function removeUndefinedFields<T>(obj: Record<string, unknown>): T {
-  return Object.entries(obj).reduce<Record<string, unknown>>((acc, [key, value]) => {
-    if (value !== undefined && value !== null) {
-      acc[key] = value;
-    }
-    return acc;
-  }, {}) as T;
-}
-
-/**
- * Type guard for the Long object structure: { low: number; high: number; unsigned: boolean }
- */
-function isLongObject(value: unknown): value is { low: number; high: number; unsigned: boolean } {
-  return (
-    typeof value === 'object' &&
-    value !== null &&
-    'low' in value &&
-    'high' in value &&
-    'unsigned' in value &&
-    typeof value.low === 'number' &&
-    typeof value.high === 'number' &&
-    typeof value.unsigned === 'boolean'
-  );
-}
-
-/**
- * Type guard for checking if a value is a plain object (for recursion)
- */
-function isPlainObject(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value) && !(value instanceof Date);
-}
-
-// --------------------------------------------------------------------------------
-
-/**
- * Convert Timestamp fields (including Long objects from protobuf) to Date objects.
- * Recursively processes the object and converts all Timestamp-like objects to Date.
- * * @param obj - The object to convert Timestamp fields from.
- * @returns A new object with Timestamps converted to Dates.
- */
-export function convertTimestampsToDate<T, K>(obj: K): T {
-  return Object.entries(obj).reduce<Record<string, unknown>>((acc, [key, value]) => {
-
-    if (isTimestamp(value)) {
-      const seconds = value.seconds;
-      let ms: number; // Milliseconds since epoch
-
-      if (typeof seconds === 'number') {
-        ms = seconds * 1000;
-      } else if (isLongObject(seconds)) {
-        const longSeconds: Long = Long.fromValue(seconds);
-        const longMs: Long = longSeconds.multiply(1000);
-        ms = longMs.toNumber();
-      } else {
-        ms = 0;
-      }
-
-      acc[key] = new Date(ms + Math.round(value.nanos / 1000000));
-
-    } else if (isPlainObject(value)) {
-      acc[key] = convertTimestampsToDate(value as K);
-    } else {
-      acc[key] = value;
-    }
-
-    return acc;
-  }, {} as Record<string, unknown>) as T;
-}
-
-/**
- * Convert Date fields to Timestamp objects
- * Processes object and converts all Date objects and ISO date strings to Timestamp-like objects
- * @param obj - Object to convert Date fields from
- * @returns New object with Dates converted to Timestamps
- */
-export function convertDatesToTimestamp<T, K>(obj: K): T {
-  return Object.entries(obj).reduce<Record<string, unknown>>((acc, [key, value]) => {
-    if (value instanceof Date) {
-      acc[key] = {
-        seconds: Math.floor(value.getTime() / 1000),
-        nanos: 0,
-      };
-    } else if (typeof value === 'string' && isISODateString(value)) {
-      // Handle ISO date strings from API requests
-      const date = new Date(value);
-      acc[key] = {
-        seconds: Math.floor(date.getTime() / 1000),
-        nanos: 0,
-      };
-    } else {
-      acc[key] = value;
-    }
-    return acc;
-  }, {}) as T;
-}
-
-/**
- * Check if a string is a valid ISO 8601 date string
- */
-function isISODateString(value: string): boolean {
-  // Match ISO 8601 format: YYYY-MM-DDTHH:mm:ss.sssZ or YYYY-MM-DDTHH:mm:ss+HH:mm
-  const isoDateRegex = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d{1,3})?(Z|[+-]\d{2}:\d{2})?$/;
-  return isoDateRegex.test(value) && !isNaN(Date.parse(value));
 }

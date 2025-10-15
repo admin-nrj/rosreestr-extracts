@@ -43,7 +43,8 @@
         "apps/api-gateway-e2e/**/*",
         "apps/auth-service-e2e/**/*",
         "apps/users-service-e2e/**/*",
-        "apps/orders-service-e2e/**/*"
+        "apps/orders-service-e2e/**/*",
+        "apps/order-processing-worker-e2e/**/*"
       ]
     }
   ],

@@ -1,0 +1,17 @@
+{
+  "name": "order-processing-worker-e2e",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "implicitDependencies": ["order-processing-worker"],
+  "projectType": "application",
+  "targets": {
+    "e2e": {
+      "executor": "@nx/jest:jest",
+      "outputs": ["{workspaceRoot}/coverage/{e2eProjectRoot}"],
+      "options": {
+        "jestConfig": "apps/order-processing-worker-e2e/jest.config.ts",
+        "passWithNoTests": true
+      },
+      "dependsOn": ["order-processing-worker:build", "order-processing-worker:serve"]
+    }
+  }
+}
