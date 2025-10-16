@@ -1,4 +1,6 @@
-import { getErrorMessage } from './error-handling.utils';
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
+/* eslint-disable @typescript-eslint/no-unsafe-member-access */
+import { getErrorMessage } from '../src/error-handling.utils';
 
 describe('getErrorMessage', () => {
   describe('when error is an instance of Error', () => {
