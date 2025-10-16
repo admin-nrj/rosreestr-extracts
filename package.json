@@ -5,6 +5,7 @@
   "scripts": {
     "nx:mcp": "npx -y nx-mcp@latest /home/nrj/projects/NRJ/RosReestrExtracts/rosreestr-extracts",
     "dev": "nx run-many -t serve --all --watch --output-style=stream",
+    "kill:services": "lsof -ti:3003,5001,5002,5003,5004 | xargs kill -9 2>/dev/null || echo 'No services running'",
     "lint": "eslint \"{src,apps,libs,test}/**/*.ts\" --fix",
     "typeorm": "ts-node -r tsconfig-paths/register --project libs/database/tsconfig.migrations.json ./node_modules/typeorm/cli.js",
     "migration:generate": "npm run typeorm -- migration:generate -d libs/database/src/data-source.ts",
@@ -16,6 +17,9 @@
   },
   "private": true,
   "dependencies": {
+    "@bull-board/express": "^6.13.1",
+    "@bull-board/nestjs": "^6.13.1",
+    "@bull-board/ui": "^6.13.1",
     "@grpc/grpc-js": "^1.14.0",
     "@grpc/proto-loader": "^0.8.0",
     "@nestjs/bull": "^11.0.4",

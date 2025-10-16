@@ -13,6 +13,7 @@ import {
 } from '@nestjs/common';
 import {
   ROSREESTR_USERS_PACKAGE_NAME,
+  RosreestrUser,
   RosreestrUsersServiceClient,
 } from '@rosreestr-extracts/interfaces';
 import { ClientGrpc } from '@nestjs/microservices';
@@ -26,8 +27,10 @@ import {
   UpdateRosreestrUserDto,
   RosreestrUserDto,
 } from './dto';
+import { ApiBearerAuth } from '@nestjs/swagger';
 
 @Controller('rosreestr-users')
+@ApiBearerAuth()
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Roles(UserRole.ADMIN)
 export class RosreestrUsersController extends BaseGrpcController<RosreestrUsersServiceClient> {
@@ -35,6 +38,11 @@ export class RosreestrUsersController extends BaseGrpcController<RosreestrUsersS
 
   constructor(@Inject(ROSREESTR_USERS_PACKAGE_NAME) client: ClientGrpc) {
     super(client, 'RosreestrUsersService');
+  }
+
+  private toDto(data: RosreestrUser): RosreestrUserDto {
+    const { passwordEncrypted: _, ...rest } = data;
+    return rest;
   }
 
   @Post()
@@ -51,7 +59,7 @@ export class RosreestrUsersController extends BaseGrpcController<RosreestrUsersS
     );
 
     this.logger.log('[createRosreestrUser] response:', response);
-    return response.rosreestrUser;
+    return this.toDto(response.rosreestrUser);
   }
 
   @Get()
@@ -61,7 +69,7 @@ export class RosreestrUsersController extends BaseGrpcController<RosreestrUsersS
     const response = await this.callGrpc(this.service.getAllRosreestrUsers({}));
 
     this.logger.log('[getAllRosreestrUsers] response:', response);
-    return response.data;
+    return response.data.map((user: RosreestrUser) => this.toDto(user));
   }
 
   @Get(':id')
@@ -71,7 +79,7 @@ export class RosreestrUsersController extends BaseGrpcController<RosreestrUsersS
     const response = await this.callGrpc(this.service.getRosreestrUser({ id }));
 
     this.logger.log('[getRosreestrUser] response:', response);
-    return response.rosreestrUser;
+    return this.toDto(response.rosreestrUser);
   }
 
   @Get('by-username/:username')
@@ -83,7 +91,7 @@ export class RosreestrUsersController extends BaseGrpcController<RosreestrUsersS
     );
 
     this.logger.log('[getRosreestrUserByUsername] response:', response);
-    return response.rosreestrUser;
+    return this.toDto(response.rosreestrUser);
   }
 
   @Patch(':id')
@@ -101,7 +109,7 @@ export class RosreestrUsersController extends BaseGrpcController<RosreestrUsersS
     );
 
     this.logger.log('[updateRosreestrUser] response:', response);
-    return response.rosreestrUser;
+    return this.toDto(response.rosreestrUser);
   }
 
   @Delete(':id')

@@ -24,6 +24,7 @@ async function bootstrap() {
 
   const appCfg = app.get<ConfigType<typeof appConfig>>(appConfig.KEY);
   const port = appCfg.ports.apiGateway;
+  const isDevelopment = process.env.NODE_ENV !== 'production';
 
   const globalPrefix = 'api';
   app.setGlobalPrefix(globalPrefix);
@@ -41,6 +42,11 @@ async function bootstrap() {
   await app.listen(port);
   Logger.log(`🚀 API Gateway is running on: http://localhost:${port}/${globalPrefix}`);
   Logger.log(`📚 Swagger documentation available at: http://localhost:${port}/${globalPrefix}/docs`);
+
+  if (isDevelopment) {
+    Logger.log(`📊 Bull Board available at: http://localhost:${port}/queues`);
+    Logger.warn(`⚠️  Bull Board is enabled in development mode only`);
+  }
 
   // Setup graceful shutdown
   setupGracefulShutdown(app, 'API Gateway');

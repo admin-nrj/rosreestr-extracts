@@ -51,7 +51,7 @@
       "options": {
         "buildTarget": "users-service:build",
         "runBuildTargetDependencies": false,
-        "port": 9231
+        "inspect": false
       },
       "configurations": {
         "development": {

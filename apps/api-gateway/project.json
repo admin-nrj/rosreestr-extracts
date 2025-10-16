@@ -52,7 +52,7 @@
       "options": {
         "buildTarget": "api-gateway:build",
         "runBuildTargetDependencies": false,
-        "port": 9229
+        "inspect": false
       },
       "configurations": {
         "development": {

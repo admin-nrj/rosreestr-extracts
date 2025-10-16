@@ -131,7 +131,7 @@ export class OrderProcessor implements OnModuleInit {
 
       const configuredAttempts = job.opts?.attempts ?? QUEUE_CONFIG.DEFAULT_JOB_OPTIONS.attempts;
       const maxAttempts = typeof configuredAttempts === 'number' ? configuredAttempts : 1;
-      const hasRetriesLeft = job.attemptsMade < maxAttempts;
+      const hasRetriesLeft = job.attemptsMade + 1  < maxAttempts;
 
       await this.updateOrder(orderId, {
         status: `${OrderStatus.ERROR_PREFIX}${errorMessage}`,
