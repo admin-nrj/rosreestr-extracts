@@ -1,5 +1,5 @@
 import { Processor, Process, InjectQueue } from '@nestjs/bull';
-import { Logger, Inject, OnModuleInit } from '@nestjs/common';
+import { Logger, Inject, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
 import { Job, Queue } from 'bull';
 import { ClientGrpc } from '@nestjs/microservices';
 import { firstValueFrom } from 'rxjs';
@@ -18,13 +18,16 @@ import { cryptoConfig, appConfig } from '@rosreestr-extracts/config';
 import { ConfigType } from '@nestjs/config';
 import { OrderStatus } from '@rosreestr-extracts/constants';
 import { OrderEntity } from '@rosreestr-extracts/entities';
+import { RosreestrBrowserService } from './services/rosreestr-browser.service';
+import { RosreestrAuthService } from './services/rosreestr-auth.service';
+import { Page } from 'puppeteer';
 
 /**
  * Order Processor
  * Processes orders from the queue using Rosreestr user credentials
  */
 @Processor(ORDER_QUEUE_NAME)
-export class OrderProcessor implements OnModuleInit {
+export class OrderProcessor implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(OrderProcessor.name);
   private ordersServiceClient: OrdersServiceClient;
   private rosreestrUsersServiceClient: RosreestrUsersServiceClient;
@@ -38,7 +41,9 @@ export class OrderProcessor implements OnModuleInit {
     @Inject(cryptoConfig.KEY)
     private readonly cryptoCfg: ConfigType<typeof cryptoConfig>,
     @Inject(appConfig.KEY)
-    private readonly appCfg: ConfigType<typeof appConfig>
+    private readonly appCfg: ConfigType<typeof appConfig>,
+    private readonly browserService: RosreestrBrowserService,
+    private readonly authService: RosreestrAuthService
   ) {}
 
   async onModuleInit() {
@@ -67,10 +72,17 @@ export class OrderProcessor implements OnModuleInit {
         `OrderProcessor initialized for Rosreestr User: ${
           response.rosreestrUser.username} (ID: ${response.rosreestrUser.id})`
       );
+
+      // Initialize Puppeteer browser
+      await this.browserService.initialize();
     } catch (error) {
       this.logger.error('Failed to initialize OrderProcessor:', error);
       throw error;
     }
+  }
+
+  async onModuleDestroy() {
+    await this.browserService.shutdown();
   }
 
   @Process({
@@ -112,11 +124,10 @@ export class OrderProcessor implements OnModuleInit {
       this.logger.log(`[Job ${job.id}] Using Rosreestr credentials for user: ${credentials.username}`);
 
       // 4. Process order with Rosreestr API
-      const result = await this.processWithRosreestrApi(cadNum, credentials);
+      const result = await this.processWithRosreestrApi(orderId, cadNum, credentials);
 
-      // 5. Update order with success status
       await this.updateOrder(orderId, {
-        status: OrderStatus.COMPLETED,
+        status: OrderStatus.REGISTERED,
         isComplete: true,
         rosreestrOrderNum: result.orderNum,
         completedAt: new Date(),
@@ -195,22 +206,45 @@ export class OrderProcessor implements OnModuleInit {
   }
 
   /**
-   * Process order with Rosreestr API
-   * TODO: Implement actual Rosreestr API integration
+   * Process order with Rosreestr API using Puppeteer
    */
   private async processWithRosreestrApi(
+    orderId: number,
     cadNum: string,
     credentials: { username: string; guLogin: string; password: string }
   ): Promise<{ orderNum: string }> {
-    this.logger.log(`Processing with Rosreestr API - cadNum: ${cadNum}`);
+    this.logger.log(`Processing with Rosreestr API - orderId: ${orderId}, cadNum: ${cadNum}`);
 
-    // TODO: Implement actual API calls to Rosreestr
-    // For now, simulate processing with a delay
-    await new Promise((resolve) => setTimeout(resolve, 3000));
+    const page: Page | null = null;
 
-    // Simulate successful processing
-    const orderNum = `RR-${Date.now()}-${Math.random().toString(36).substring(7).toUpperCase()}`;
+    try {
+      const page = await this.browserService.createPage();
 
-    return { orderNum };
+      // Check authentication status
+      const isAuthenticated = await this.authService.checkAuthStatus(page);
+
+      // If not authenticated, perform login
+      if (isAuthenticated) {
+        this.logger.log('Rosreestr user not authenticated, performing login...');
+        await this.authService.login(page, credentials);
+      }
+
+      const orderNum  = await this.browserService.placeOrder(page, cadNum)
+
+      return { orderNum };
+    } catch (error) {
+      this.logger.error('Error in processWithRosreestrApi:', error);
+
+      // Take screenshot on error
+      await this.browserService.takeScreenshot(page, orderId, 'error')
+        .catch(screenshotError => {
+          this.logger.error('Failed to take screenshot:', screenshotError);
+        })
+
+      throw error;
+    } finally {
+      // Always close the page
+      await this.browserService.closePage(page)
+    }
   }
 }

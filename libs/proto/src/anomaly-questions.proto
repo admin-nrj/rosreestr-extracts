@@ -1,0 +1,64 @@
+syntax = "proto3";
+
+package anomaly_questions;
+
+import 'common.proto';
+
+service AnomalyQuestionsService {
+  rpc searchQuestion (SearchQuestionRequest) returns (SearchQuestionResponse);
+  rpc addQuestionWithAnswer (AddQuestionWithAnswerRequest) returns (AddQuestionWithAnswerResponse);
+  rpc getQuestionsWithoutAnswer (GetQuestionsWithoutAnswerRequest) returns (GetQuestionsWithoutAnswerResponse);
+  rpc updateAnswer (UpdateAnswerRequest) returns (UpdateAnswerResponse);
+}
+
+message AnomalyQuestion {
+  int32 id = 1;
+  string question = 2;
+  optional string answer = 3;
+  string rosreestr_user_name = 4;
+  string created_at = 5;
+  string updated_at = 6;
+}
+
+message SearchQuestionRequest {
+  string question = 1;
+  string rosreestr_user_name = 2;
+}
+
+message SearchQuestionResponse {
+  optional AnomalyQuestion anomaly_question = 1;
+  optional common.Error error = 2;
+  bool is_new = 3; // true if question was just created
+}
+
+message AddQuestionWithAnswerRequest {
+  string question = 1;
+  string answer = 2;
+  string rosreestr_user_name = 3;
+}
+
+message AddQuestionWithAnswerResponse {
+  optional AnomalyQuestion anomaly_question = 1;
+  optional common.Error error = 2;
+}
+
+message GetQuestionsWithoutAnswerRequest {
+  optional string rosreestr_user_name = 1;
+}
+
+message GetQuestionsWithoutAnswerResponse {
+  repeated AnomalyQuestion questions = 1;
+  optional common.Error error = 2;
+}
+
+message UpdateAnswerRequest {
+  int32 id = 1;
+  string answer = 2;
+}
+
+message UpdateAnswerResponse {
+  optional AnomalyQuestion anomaly_question = 1;
+  optional common.Error error = 2;
+}
+
+// npx protoc --ts_proto_out=./libs/interfaces/src/ --proto_path=./libs/proto/src/ ./libs/proto/src/*.proto --ts_proto_opt=nestJs=true

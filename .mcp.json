@@ -7,6 +7,16 @@
         "nx",
         "mcp"
       ]
+    },
+    "puppeteer-local": {
+      "command": "puppeteer-mcp-server",
+      "args": [],
+      "env": {}
+    },
+    "puppeteer": {
+      "command": "npx",
+      "args": ["-y", "puppeteer-mcp-server"],
+      "env": {}
     }
   }
 }

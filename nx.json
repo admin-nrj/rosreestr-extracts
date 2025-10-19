@@ -45,7 +45,8 @@
         "apps/users-service-e2e/**/*",
         "apps/orders-service-e2e/**/*",
         "apps/order-processing-worker-e2e/**/*",
-        "apps/rosreestr-users-service-e2e/**/*"
+        "apps/rosreestr-users-service-e2e/**/*",
+        "apps/rosreestr-anomaly-questions-e2e/**/*"
       ]
     }
   ],

@@ -12,6 +12,7 @@ export default registerAs('app', () => ({
     usersService: parseInt(process.env.USERS_SERVICE_PORT || '5002', 10),
     ordersService: parseInt(process.env.ORDERS_SERVICE_PORT || '5003', 10),
     rosreestrUsersService: parseInt(process.env.ROSREESTR_USERS_SERVICE_PORT || '5004', 10),
+    anomalyQuestionsService: parseInt(process.env.ANOMALY_QUESTIONS_SERVICE_PORT || '5005', 10),
   },
 
   // Service URLs for gRPC connections
@@ -22,10 +23,22 @@ export default registerAs('app', () => ({
     rosreestrUsersService: `${process.env.ROSREESTR_USERS_SERVICE_HOST || 'localhost'}:${
       process.env.ROSREESTR_USERS_SERVICE_PORT || '5004'
     }`,
+    anomalyQuestionsService: `${process.env.ANOMALY_QUESTIONS_SERVICE_HOST || 'localhost'}:${
+      process.env.ANOMALY_QUESTIONS_SERVICE_PORT || '5005'
+    }`,
   },
 
   // Worker configuration
   worker: {
     rosreestrUserName: process.env.ROSREESTR_USER_NAME || '',
+    puppeteer: {
+      headless: process.env.PUPPETEER_HEADLESS !== 'false',
+      screenshotsDir: process.env.DOWNLOADS_DIR
+        ? `${process.env.DOWNLOADS_DIR}/screenshots`
+        : './downloads/screenshots',
+      captchaDir: process.env.DOWNLOADS_DIR
+        ? `${process.env.DOWNLOADS_DIR}/screenshots`
+        : './downloads/screenshots',
+    },
   },
 }));

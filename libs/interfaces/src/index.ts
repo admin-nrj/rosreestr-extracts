@@ -45,3 +45,19 @@ export {
   RosreestrUsersServiceController,
   RosreestrUsersServiceControllerMethods
 } from './rosreestr-users';
+export {
+  AnomalyQuestion,
+  SearchQuestionRequest,
+  SearchQuestionResponse,
+  AddQuestionWithAnswerRequest,
+  AddQuestionWithAnswerResponse,
+  GetQuestionsWithoutAnswerRequest,
+  GetQuestionsWithoutAnswerResponse,
+  UpdateAnswerRequest,
+  UpdateAnswerResponse,
+  ANOMALY_QUESTIONS_SERVICE_NAME,
+  ANOMALY_QUESTIONS_PACKAGE_NAME,
+  AnomalyQuestionsServiceClient,
+  AnomalyQuestionsServiceController,
+  AnomalyQuestionsServiceControllerMethods
+} from './anomaly-questions';

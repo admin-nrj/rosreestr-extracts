@@ -8,8 +8,14 @@ import { DatabaseModule } from '@rosreestr-extracts/database';
 import { CryptoModule } from '@rosreestr-extracts/crypto';
 import { databaseConfig, appConfig, redisConfig, cryptoConfig } from '@rosreestr-extracts/config';
 import { RosreestrUserEntity } from '@rosreestr-extracts/entities';
-import { ORDERS_PACKAGE_NAME, ROSREESTR_USERS_PACKAGE_NAME } from '@rosreestr-extracts/interfaces';
-import { ORDERS_PROTO_PATH, ROSREESTR_USERS_PROTO_PATH } from '@rosreestr-extracts/proto';
+import {
+  ORDERS_PACKAGE_NAME,
+  ROSREESTR_USERS_PACKAGE_NAME,
+  ANOMALY_QUESTIONS_PACKAGE_NAME,
+} from '@rosreestr-extracts/interfaces';
+import { ORDERS_PROTO_PATH, ROSREESTR_USERS_PROTO_PATH, ANOMALY_QUESTIONS_PROTO_PATH } from '@rosreestr-extracts/proto';
+import { RosreestrBrowserService } from './services/rosreestr-browser.service';
+import { RosreestrAuthService } from './services/rosreestr-auth.service';
 
 /**
  * Worker Module
@@ -60,10 +66,28 @@ import { ORDERS_PROTO_PATH, ROSREESTR_USERS_PROTO_PATH } from '@rosreestr-extrac
           },
         }),
       },
+      {
+        name: ANOMALY_QUESTIONS_PACKAGE_NAME,
+        imports: [ConfigModule],
+        inject: [appConfig.KEY],
+        useFactory: (appCfg: ConfigType<typeof appConfig>) => ({
+          transport: Transport.GRPC,
+          options: {
+            package: ANOMALY_QUESTIONS_PACKAGE_NAME,
+            protoPath: ANOMALY_QUESTIONS_PROTO_PATH,
+            url: appCfg.urls.anomalyQuestionsService,
+            loader: {
+              arrays: true,
+            },
+          },
+        }),
+      },
     ]),
   ],
   providers: [
-    OrderProcessor
+    OrderProcessor,
+    RosreestrBrowserService,
+    RosreestrAuthService,
   ],
 })
 export class AppModule {}
