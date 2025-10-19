@@ -30,6 +30,36 @@
       "skipFiles": ["<node_internals>/**"],
       "sourceMaps": true,
       "outFiles": ["${workspaceFolder}/apps/order-processing-worker/dist/**/*.(m|c|)js", "!**/node_modules/**"]
+    },
+    {
+      "type": "node",
+      "request": "launch",
+      "name": "Debug rosreestr-users-service with Nx",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": ["nx", "serve", "rosreestr-users-service"],
+      "env": {
+        "NODE_OPTIONS": "--inspect=9232"
+      },
+      "console": "integratedTerminal",
+      "internalConsoleOptions": "neverOpen",
+      "skipFiles": ["<node_internals>/**"],
+      "sourceMaps": true,
+      "outFiles": ["${workspaceFolder}/apps/rosreestr-users-service/dist/**/*.(m|c|)js", "!**/node_modules/**"]
+    },
+    {
+      "type": "node",
+      "request": "launch",
+      "name": "Debug rosreestr-anomaly-questions with Nx",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": ["nx", "serve", "rosreestr-anomaly-questions"],
+      "env": {
+        "NODE_OPTIONS": "--inspect=9233"
+      },
+      "console": "integratedTerminal",
+      "internalConsoleOptions": "neverOpen",
+      "skipFiles": ["<node_internals>/**"],
+      "sourceMaps": true,
+      "outFiles": ["${workspaceFolder}/apps/rosreestr-anomaly-questions/dist/**/*.(m|c|)js", "!**/node_modules/**"]
     }
   ]
 }
