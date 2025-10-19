@@ -6,23 +6,38 @@
  * User agent string for browser
  */
 export const USER_AGENT =
-  'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Safari/537.36';
+  'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.7390.107 Safari/537.36';
 
 /**
  * HTTP headers to set on pages
  */
 export const HTTP_HEADERS = {
-  'user-agent': USER_AGENT,
-  'upgrade-insecure-requests': '1',
-  accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
-  'accept-encoding': 'gzip, deflate, br',
-  'Accept-Language': 'ru-RU,ru;q=0.9,en;q=0.8'
+  // 'user-agent': USER_AGENT,
+  // 'upgrade-insecure-requests': '1',
+  // accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
+  // 'accept-encoding': 'gzip, deflate, br',
+  // 'Accept-Language': 'ru-RU,ru;q=0.9,en;q=0.8'
 } as const;
 
 /**
  * Browser launch arguments for optimal performance and stealth
  */
 export const BROWSER_ARGS = [
+  '--no-sandbox',
+  '--disable-setuid-sandbox',
+  '--disable-web-security',
+  '--disable-features=IsolateOrigins,site-per-process',
+  '--ignore-certificate-errors',
+  '--password-store=basic',
+  '--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+  '--lang=ru-RU,ru',
+  '--accept-lang=ru-RU,ru',
+  '--window-size=1920,1080',
+  '--no-first-run',
+  '--no-default-browser-check',
+  ]
+
+export const BROWSER_ARGS1 = [
   '--no-sandbox',
   '--disable-setuid-sandbox',
   '--disable-web-security',

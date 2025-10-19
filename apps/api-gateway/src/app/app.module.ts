@@ -6,6 +6,7 @@ import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
 import { OrdersModule } from './orders/orders.module';
 import { RosreestrUsersModule } from './rosreestr-users/rosreestr-users.module';
+import { CodesModule } from './codes/codes.module';
 import { BullBoardModule } from '@bull-board/nestjs';
 import { ExpressAdapter } from '@bull-board/express';
 import { BullAdapter } from '@bull-board/api/bullAdapter';
@@ -35,6 +36,7 @@ const isDevelopment = process.env.NODE_ENV !== 'production';
     UsersModule,
     OrdersModule,
     RosreestrUsersModule,
+    CodesModule,
   ],
   controllers: [AppController],
   providers: [],

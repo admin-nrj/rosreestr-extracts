@@ -1,0 +1,9 @@
+{
+  "name": "redis-pubsub",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "libs/redis-pubsub/src",
+  "projectType": "library",
+  "tags": [],
+  "// targets": "to see all targets run: nx show project redis-pubsub --web",
+  "targets": {}
+}

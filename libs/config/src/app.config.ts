@@ -40,5 +40,8 @@ export default registerAs('app', () => ({
         ? `${process.env.DOWNLOADS_DIR}/screenshots`
         : './downloads/screenshots',
     },
+    codeDelivery: {
+      timeoutMs: parseInt(process.env.CODE_DELIVERY_TIMEOUT || '300000', 10),
+    },
   },
 }));

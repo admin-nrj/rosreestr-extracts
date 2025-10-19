@@ -6,6 +6,7 @@ import { QueueModule } from '@rosreestr-extracts/queue';
 import { DalModule } from '@rosreestr-extracts/dal';
 import { DatabaseModule } from '@rosreestr-extracts/database';
 import { CryptoModule } from '@rosreestr-extracts/crypto';
+import { RedisPubSubModule } from '@rosreestr-extracts/redis-pubsub';
 import { databaseConfig, appConfig, redisConfig, cryptoConfig } from '@rosreestr-extracts/config';
 import { RosreestrUserEntity } from '@rosreestr-extracts/entities';
 import {
@@ -33,6 +34,7 @@ import { RosreestrAuthService } from './services/rosreestr-auth.service';
     QueueModule.forConsumer(),
     DalModule,
     CryptoModule,
+    RedisPubSubModule,
     ClientsModule.registerAsync([
       {
         name: ORDERS_PACKAGE_NAME,

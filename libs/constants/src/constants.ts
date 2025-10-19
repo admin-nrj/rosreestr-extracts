@@ -20,3 +20,30 @@ export enum OrderStatus {
   /** Префикс для ошибок (за ним следует текст ошибки) */
   ERROR_PREFIX = 'Ошибка: ',
 }
+
+/**
+ * Redis Pub/Sub Code Delivery Constants
+ */
+
+/**
+ * Prefix for all code delivery channels
+ */
+export const CODE_DELIVERY_CHANNEL_PREFIX = 'codes';
+
+/**
+ * Default timeout for waiting for a code (5 minutes)
+ */
+export const DEFAULT_CODE_TIMEOUT_MS = 5 * 60 * 1000;
+
+/**
+ * Generate channel name for code delivery
+ * Format: codes:{rosreestrUserName}:{type}
+ * @param rosreestrUserName - Username waiting for code
+ * @param type - Type of code (sms or captcha)
+ * @returns Channel name
+ */
+export function getCodeChannelName(rosreestrUserName: string, type: string): string {
+  // Sanitize username to prevent injection attacks
+  const sanitizedUserName = rosreestrUserName.replace(/[^a-zA-Z0-9@._-]/g, '_');
+  return `${CODE_DELIVERY_CHANNEL_PREFIX}:${sanitizedUserName}:${type}`;
+}

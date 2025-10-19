@@ -32,6 +32,8 @@ export class OrderProcessor implements OnModuleInit, OnModuleDestroy {
   private ordersServiceClient: OrdersServiceClient;
   private rosreestrUsersServiceClient: RosreestrUsersServiceClient;
   private rosreestrUserId: number;
+  private initializationPromise: Promise<void>;
+  private isInitialized = false;
 
   constructor(
     @Inject(ORDERS_PACKAGE_NAME) private readonly ordersGrpcClient: ClientGrpc,
@@ -47,6 +49,16 @@ export class OrderProcessor implements OnModuleInit, OnModuleDestroy {
   ) {}
 
   async onModuleInit() {
+    this.initializationPromise = this.initialize();
+    await this.initializationPromise;
+  }
+
+  /**
+   * Initialize the processor with Rosreestr user and browser
+   */
+  private async initialize(): Promise<void> {
+    this.logger.log('Starting OrderProcessor initialization...');
+
     this.ordersServiceClient = this.ordersGrpcClient.getService<OrdersServiceClient>(ORDERS_SERVICE_NAME);
     this.rosreestrUsersServiceClient =
       this.rosreestrUsersGrpcClient.getService<RosreestrUsersServiceClient>(ROSREESTR_USERS_SERVICE_NAME);
@@ -75,9 +87,29 @@ export class OrderProcessor implements OnModuleInit, OnModuleDestroy {
 
       // Initialize Puppeteer browser
       await this.browserService.initialize();
+
+      this.isInitialized = true;
+      this.logger.log('OrderProcessor initialization completed successfully');
     } catch (error) {
       this.logger.error('Failed to initialize OrderProcessor:', error);
       throw error;
+    }
+  }
+
+  /**
+   * Wait for initialization to complete
+   * This ensures that rosreestrUserId and browser are ready
+   */
+  private async ensureInitialized(): Promise<void> {
+    if (this.isInitialized) {
+      return;
+    }
+
+    this.logger.log('Waiting for OrderProcessor initialization to complete...');
+    await this.initializationPromise;
+
+    if (!this.isInitialized) {
+      throw new Error('OrderProcessor initialization failed');
     }
   }
 
@@ -93,6 +125,9 @@ export class OrderProcessor implements OnModuleInit, OnModuleDestroy {
     const { orderId, cadNum, userId } = job.data;
 
     this.logger.log(`[Job ${job.id}] Processing order ${orderId} (cadNum: ${cadNum}) for user ${userId}`);
+
+    // Ensure processor is fully initialized before processing
+    await this.ensureInitialized();
 
     try {
       // 1. Update order with rosreestr_user_id and status
@@ -128,9 +163,8 @@ export class OrderProcessor implements OnModuleInit, OnModuleDestroy {
 
       await this.updateOrder(orderId, {
         status: OrderStatus.REGISTERED,
-        isComplete: true,
         rosreestrOrderNum: result.orderNum,
-        completedAt: new Date(),
+        rosreestrRegisteredAt: new Date(),
       });
 
       this.logger.log(`[Job ${job.id}] Order ${orderId} processed successfully`);
@@ -163,6 +197,11 @@ export class OrderProcessor implements OnModuleInit, OnModuleDestroy {
    * Update order status via gRPC
    */
   private async updateOrder(orderId: number, updates: Partial<OrderEntity>): Promise<void> {
+    // Ensure initialized if rosreestrUserId is being used
+    if (updates.rosreestrUserId !== undefined && !this.isInitialized) {
+      await this.ensureInitialized();
+    }
+
     this.logger.log('[updateOrder] update', updates);
     try {
       const response = await firstValueFrom(
@@ -215,16 +254,16 @@ export class OrderProcessor implements OnModuleInit, OnModuleDestroy {
   ): Promise<{ orderNum: string }> {
     this.logger.log(`Processing with Rosreestr API - orderId: ${orderId}, cadNum: ${cadNum}`);
 
-    const page: Page | null = null;
+    let page: Page | null = null;
 
     try {
-      const page = await this.browserService.createPage();
+      page = await this.browserService.createPage();
 
       // Check authentication status
       const isAuthenticated = await this.authService.checkAuthStatus(page);
 
       // If not authenticated, perform login
-      if (isAuthenticated) {
+      if (!isAuthenticated) {
         this.logger.log('Rosreestr user not authenticated, performing login...');
         await this.authService.login(page, credentials);
       }

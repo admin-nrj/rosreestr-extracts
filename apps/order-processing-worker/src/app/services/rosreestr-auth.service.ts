@@ -11,7 +11,9 @@ import {
   AnomalyQuestionsServiceClient,
   ANOMALY_QUESTIONS_SERVICE_NAME,
 } from '@rosreestr-extracts/interfaces';
+import { RedisSubscriberService, CodeType } from '@rosreestr-extracts/redis-pubsub';
 import { lastValueFrom } from 'rxjs';
+import { getErrorMessage } from '@rosreestr-extracts/utils';
 
 /**
  * Credentials for Rosreestr/Gosuslugi authentication
@@ -34,7 +36,8 @@ export class RosreestrAuthService implements OnModuleInit {
     @Inject(appConfig.KEY)
     private readonly config: ConfigType<typeof appConfig>,
     @Inject(ANOMALY_QUESTIONS_PACKAGE_NAME)
-    private readonly anomalyQuestionsClient: ClientGrpc
+    private readonly anomalyQuestionsClient: ClientGrpc,
+    private readonly redisSubscriberService: RedisSubscriberService
   ) {}
 
   onModuleInit() {
@@ -99,13 +102,13 @@ export class RosreestrAuthService implements OnModuleInit {
           // Navigate to GU login page
           // await page.goto(GU_URLS.LOGIN_PAGE, { waitUntil: 'networkidle2', timeout: PUPPETEER_TIMEOUTS.NAVIGATION });
           await page.click(ROSREESTR_SELECTORS.LK_SIGN_IN);
-          await page.waitForNavigation({ waitUntil: 'networkidle2', timeout: PUPPETEER_TIMEOUTS.NAVIGATION });
+          await waitForTimeOut(2000)
         }
       }
 
       // Wait for Gosuslugi login form
       await page.waitForSelector(GU_SELECTORS.LOGIN_INPUT, {
-        timeout: PUPPETEER_TIMEOUTS.ELEMENT_WAIT,
+        timeout: PUPPETEER_TIMEOUTS.NAVIGATION,
       });
 
       this.logger.log('Entering credentials...');
@@ -114,15 +117,7 @@ export class RosreestrAuthService implements OnModuleInit {
       await page.focus(GU_SELECTORS.PASSWORD_INPUT);
       await page.type(GU_SELECTORS.PASSWORD_INPUT, credentials.password, { delay: 100 });
 
-      this.logger.log('Submitting login form...');
-      const submitButtonSelector = await this.getGUSubmitButtonSelector(page);
-
-      await Promise.all([
-        page.waitForNavigation({ waitUntil: 'networkidle2', timeout: PUPPETEER_TIMEOUTS.LOGIN_COMPLETE }),
-        page.click(submitButtonSelector),
-        this.handleAndProcessSMSConfirmation(page, credentials.username),
-      ]);
-
+      await this.handleAndProcessSMSConfirmation(page, credentials.username);
       await this.checkAndProcessCaptcha(page, credentials.username);
       await this.checkAndProcessAnomalyQuestion(page, credentials.username);
       await this.processMessengerMaxPage(page);
@@ -277,33 +272,78 @@ export class RosreestrAuthService implements OnModuleInit {
     await waitForTimeOut(500);
   }
 
-  private async getCaptchaCode(captchaFilePath: string, rosreestrUserName: string) {
-    this.logger.log('[getCaptchaCode] started for user: ', rosreestrUserName);
-    // TODO: implement waiting and obtain captcha code value
-    await waitForTimeOut(2000);
-    return '12345';
-  }
-
   private async handleAndProcessSMSConfirmation(page: Page, rosreestrUserName: string) {
     this.logger.log('[handleAndProcessSMSConfirmation] SMS code processing started');
+    let channel: string;
 
-    const isSmsCodeWaiting = await elementExists(page, GU_SELECTORS.SMS_CODE_TEXT);
-    if (!isSmsCodeWaiting) {
-      throw new Error('SMS code processing failed');
+    try {
+      // STEP 1: Subscribe to Redis channel BEFORE submitting login form
+      // This ensures we don't miss the SMS code
+      this.logger.log('[handleAndProcessSMSConfirmation] Subscribing to SMS code channel...');
+      channel = await this.redisSubscriberService.subscribeToCodeChannel(rosreestrUserName, CodeType.SMS);
+      this.logger.log(`[handleAndProcessSMSConfirmation] Successfully subscribed to channel: ${channel}`);
+
+      // STEP 2: Submit login form
+      this.logger.log('Submitting login form...');
+      const submitButtonSelector = await this.getGUSubmitButtonSelector(page);
+      await page.click(submitButtonSelector);
+      await waitForTimeOut(1000);
+      await page.waitForSelector(GU_SELECTORS.SMS_CODE_TEXT, { timeout: PUPPETEER_TIMEOUTS.ELEMENT_WAIT });
+    } catch (error) {
+      this.logger.error('[handleAndProcessSMSConfirmation] Error during SMS processing:', error);
+
+      // IMPORTANT: Cleanup subscription if we subscribed but failed before waitForCode
+      this.logger.warn('[handleAndProcessSMSConfirmation] Cleaning up subscription due to error');
+      await this.redisSubscriberService.unsubscribeFromCodeChannel(channel);
+
+      throw error;
     }
-    const code = await this.getCodeFromSms(rosreestrUserName)
 
-    this.logger.log('[handleAndProcessSMSConfirmation] code '+ code)
-    if (code) {
-      await page.focus(GU_SELECTORS.SMS_CODE_INPUT)
-      await page.keyboard.type(String(code), { delay: 100 })
+    // STEP 3: Wait for the SMS code from Redis
+    this.logger.log('[handleAndProcessSMSConfirmation] Waiting for SMS code from Redis...');
+    const code = await this.getCodeFromSms(rosreestrUserName);
+    this.logger.log('[handleAndProcessSMSConfirmation] Received code: ' + code);
+
+    // STEP 4: Enter the code
+    await page.focus(GU_SELECTORS.SMS_CODE_INPUT);
+    await page.keyboard.type(String(code), { delay: 100 });
+    this.logger.log('[handleAndProcessSMSConfirmation] SMS code entered successfully');
+  }
+
+  private async getCaptchaCode(captchaFilePath: string, rosreestrUserName: string): Promise<string> {
+    this.logger.log('[getCaptchaCode] captchaFilePath: ', captchaFilePath);
+    this.logger.log('[getCaptchaCode] started for user: ', rosreestrUserName);
+
+    try {
+      const timeoutMs = this.config.worker.codeDelivery.timeoutMs;
+      this.logger.log(`[getCaptchaCode] waiting for captcha code (timeout: ${timeoutMs}ms)`);
+
+      // Wait for captcha code via Redis Pub/Sub
+      const code = await this.redisSubscriberService.waitForCode(rosreestrUserName, CodeType.CAPTCHA, timeoutMs);
+
+      this.logger.log(`[getCaptchaCode] received code for user: ${rosreestrUserName}`);
+      return code;
+    } catch (error) {
+      this.logger.error(`[getCaptchaCode] failed for user ${rosreestrUserName}:`, error);
+      throw new Error(`Failed to receive captcha code: ${getErrorMessage(error)}`);
     }
   }
 
-  private async getCodeFromSms(rosreestrUserName: string) {
+  private async getCodeFromSms(rosreestrUserName: string): Promise<string> {
     this.logger.log('[getCodeFromSms] started for user: ', rosreestrUserName);
-    // TODO: implement waiting and obtain SMS code value
-    await waitForTimeOut(2000);
-    return '12345';
+
+    try {
+      const timeoutMs = this.config.worker.codeDelivery.timeoutMs;
+      this.logger.log(`[getCodeFromSms] waiting for SMS code (timeout: ${timeoutMs}ms)`);
+
+      // Wait for SMS code via Redis Pub/Sub
+      const code = await this.redisSubscriberService.waitForCode(rosreestrUserName, CodeType.SMS, timeoutMs);
+
+      this.logger.log(`[getCodeFromSms] received code for user: ${rosreestrUserName}`);
+      return code;
+    } catch (error) {
+      this.logger.error(`[getCodeFromSms] failed for user ${rosreestrUserName}:`, error);
+      throw new Error(`Failed to receive SMS code: ${getErrorMessage(error)}`);
+    }
   }
 }

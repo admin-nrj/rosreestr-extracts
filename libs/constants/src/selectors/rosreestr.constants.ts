@@ -4,7 +4,8 @@
  */
 export const ROSREESTR_SELECTORS = {
   /** Sign in button/link on Rosreestr personal cabinet header */
-  LK_SIGN_IN: '#personal-cabinet-root > div > div.rros-ui-lib-loading-container > header > div:nth-child(1) > div > div.top-info__user-wrap > div > div',
+  LK_SIGN_IN: '#headerTopInfo > div > div.top-info__user-wrap > div',
+
 } as const;
 
 /**
