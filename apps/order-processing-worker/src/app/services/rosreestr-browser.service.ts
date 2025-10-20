@@ -1,13 +1,19 @@
 import { Injectable, Logger, OnModuleDestroy, Inject } from '@nestjs/common';
 import { ConfigType } from '@nestjs/config';
 import { appConfig } from '@rosreestr-extracts/config';
-import { BROWSER_ARGS, DEFAULT_VIEWPORT, HTTP_HEADERS } from '../common/puppeteer-options.constants';
+import {
+  BROWSER_ARGS,
+  DEFAULT_VIEWPORT,
+  HTTP_HEADERS,
+  PUPPETEER_TIMEOUTS,
+} from '../common/puppeteer-options.constants';
 import puppeteer from 'puppeteer-extra';
 import StealthPlugin from 'puppeteer-extra-plugin-stealth';
 import { Browser, Page } from 'puppeteer';
 import { executablePath } from 'puppeteer';
 import * as fs from 'fs';
 import * as path from 'path';
+import { ROSREESTR_SELECTORS, ROSREESTR_URLS } from '@rosreestr-extracts/constants';
 
 puppeteer.use(StealthPlugin());
 
@@ -82,7 +88,7 @@ export class RosreestrBrowserService implements OnModuleDestroy {
     const page = await browser.newPage();
 
     // Set HTTP headers
-    await page.setExtraHTTPHeaders(HTTP_HEADERS);
+    // await page.setExtraHTTPHeaders(HTTP_HEADERS);
 
     this.logger.log('Created new page');
     return page;
@@ -153,14 +159,7 @@ export class RosreestrBrowserService implements OnModuleDestroy {
     await this.shutdown();
   }
 
-  async placeOrder(rosreestrPage: Page, cadNum: string) {
-    this.logger.log('Placing order...');
-    // TODO: Implement cadastral number search and order processing
-    // This is where the actual Rosreestr order flow would be implemented
-    // For now, simulate processing with a delay
-    await new Promise((resolve) => setTimeout(resolve, 3000));
-
-    // Simulate successful processing
-    return `RR-${Date.now()}-${Math.random().toString(36).substring(7).toUpperCase()}`;
+  async getCookies() {
+    return await this.browser.cookies()
   }
 }

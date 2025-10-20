@@ -19,6 +19,9 @@ export enum OrderStatus {
 
   /** Префикс для ошибок (за ним следует текст ошибки) */
   ERROR_PREFIX = 'Ошибка: ',
+
+  CAD_NUM_NOT_FOUND_ON_PORTAL = 'Кадастровый номер не найден на портале'
+
 }
 
 /**

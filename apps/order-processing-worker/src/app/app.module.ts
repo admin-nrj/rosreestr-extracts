@@ -17,6 +17,7 @@ import {
 import { ORDERS_PROTO_PATH, ROSREESTR_USERS_PROTO_PATH, ANOMALY_QUESTIONS_PROTO_PATH } from '@rosreestr-extracts/proto';
 import { RosreestrBrowserService } from './services/rosreestr-browser.service';
 import { RosreestrAuthService } from './services/rosreestr-auth.service';
+import { RosreestrOrderService } from './services/rosreestr-order.service';
 
 /**
  * Worker Module
@@ -90,6 +91,7 @@ import { RosreestrAuthService } from './services/rosreestr-auth.service';
     OrderProcessor,
     RosreestrBrowserService,
     RosreestrAuthService,
+    RosreestrOrderService,
   ],
 })
 export class AppModule {}

@@ -12,11 +12,11 @@ export const USER_AGENT =
  * HTTP headers to set on pages
  */
 export const HTTP_HEADERS = {
-  // 'user-agent': USER_AGENT,
-  // 'upgrade-insecure-requests': '1',
-  // accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
-  // 'accept-encoding': 'gzip, deflate, br',
-  // 'Accept-Language': 'ru-RU,ru;q=0.9,en;q=0.8'
+  'user-agent': USER_AGENT,
+  'upgrade-insecure-requests': '1',
+  accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
+  'accept-encoding': 'gzip, deflate, br',
+  'Accept-Language': 'ru-RU,ru;q=0.9,en;q=0.8'
 } as const;
 
 /**

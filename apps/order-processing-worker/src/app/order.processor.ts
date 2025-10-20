@@ -1,26 +1,28 @@
-import { Processor, Process, InjectQueue } from '@nestjs/bull';
-import { Logger, Inject, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
+import { InjectQueue, Process, Processor } from '@nestjs/bull';
+import { Inject, Logger, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
 import { Job, Queue } from 'bull';
 import { ClientGrpc } from '@nestjs/microservices';
 import { firstValueFrom } from 'rxjs';
-import { ORDER_QUEUE_NAME, ORDER_JOB_NAMES, QUEUE_CONFIG, OrderJobData } from '@rosreestr-extracts/queue';
+import { ORDER_JOB_NAMES, ORDER_QUEUE_NAME, OrderJobData, QUEUE_CONFIG } from '@rosreestr-extracts/queue';
 import { CryptoService } from '@rosreestr-extracts/crypto';
 import {
-  OrdersServiceClient,
-  ORDERS_SERVICE_NAME,
   ORDERS_PACKAGE_NAME,
-  RosreestrUsersServiceClient,
-  ROSREESTR_USERS_SERVICE_NAME,
+  ORDERS_SERVICE_NAME,
+  OrdersServiceClient,
   ROSREESTR_USERS_PACKAGE_NAME,
+  ROSREESTR_USERS_SERVICE_NAME,
+  RosreestrUsersServiceClient
 } from '@rosreestr-extracts/interfaces';
 import { convertDatesToTimestamp, getErrorMessage, getErrorStack } from '@rosreestr-extracts/utils';
-import { cryptoConfig, appConfig } from '@rosreestr-extracts/config';
+import { appConfig, cryptoConfig } from '@rosreestr-extracts/config';
 import { ConfigType } from '@nestjs/config';
 import { OrderStatus } from '@rosreestr-extracts/constants';
 import { OrderEntity } from '@rosreestr-extracts/entities';
 import { RosreestrBrowserService } from './services/rosreestr-browser.service';
 import { RosreestrAuthService } from './services/rosreestr-auth.service';
 import { Page } from 'puppeteer';
+import { RosreestrOrderService } from './services/rosreestr-order.service';
+import { PlaceOrderResult } from './interfaces/place-order-result.interface';
 
 /**
  * Order Processor
@@ -45,7 +47,8 @@ export class OrderProcessor implements OnModuleInit, OnModuleDestroy {
     @Inject(appConfig.KEY)
     private readonly appCfg: ConfigType<typeof appConfig>,
     private readonly browserService: RosreestrBrowserService,
-    private readonly authService: RosreestrAuthService
+    private readonly authService: RosreestrAuthService,
+    private readonly orderService: RosreestrOrderService
   ) {}
 
   async onModuleInit() {
@@ -162,9 +165,10 @@ export class OrderProcessor implements OnModuleInit, OnModuleDestroy {
       const result = await this.processWithRosreestrApi(orderId, cadNum, credentials);
 
       await this.updateOrder(orderId, {
-        status: OrderStatus.REGISTERED,
+        status: result.status,
         rosreestrOrderNum: result.orderNum,
         rosreestrRegisteredAt: new Date(),
+        isComplete: result.isComplete,
       });
 
       this.logger.log(`[Job ${job.id}] Order ${orderId} processed successfully`);
@@ -251,7 +255,7 @@ export class OrderProcessor implements OnModuleInit, OnModuleDestroy {
     orderId: number,
     cadNum: string,
     credentials: { username: string; guLogin: string; password: string }
-  ): Promise<{ orderNum: string }> {
+  ): Promise<PlaceOrderResult> {
     this.logger.log(`Processing with Rosreestr API - orderId: ${orderId}, cadNum: ${cadNum}`);
 
     let page: Page | null = null;
@@ -268,9 +272,11 @@ export class OrderProcessor implements OnModuleInit, OnModuleDestroy {
         await this.authService.login(page, credentials);
       }
 
-      const orderNum  = await this.browserService.placeOrder(page, cadNum)
+      // After successful authentication, use fetch API to search for cadastral object
+      this.logger.log(`Making fetch request for cadastral number: ${cadNum}`);
+      const browserCookies = await this.browserService.getCookies();
 
-      return { orderNum };
+      return await this.orderService.placeOrderByFetch(cadNum, browserCookies);
     } catch (error) {
       this.logger.error('Error in processWithRosreestrApi:', error);
 
