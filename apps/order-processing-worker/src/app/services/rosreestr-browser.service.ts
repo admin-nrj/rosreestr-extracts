@@ -4,8 +4,6 @@ import { appConfig } from '@rosreestr-extracts/config';
 import {
   BROWSER_ARGS,
   DEFAULT_VIEWPORT,
-  HTTP_HEADERS,
-  PUPPETEER_TIMEOUTS,
 } from '../common/puppeteer-options.constants';
 import puppeteer from 'puppeteer-extra';
 import StealthPlugin from 'puppeteer-extra-plugin-stealth';
@@ -13,7 +11,6 @@ import { Browser, Page } from 'puppeteer';
 import { executablePath } from 'puppeteer';
 import * as fs from 'fs';
 import * as path from 'path';
-import { ROSREESTR_SELECTORS, ROSREESTR_URLS } from '@rosreestr-extracts/constants';
 
 puppeteer.use(StealthPlugin());
 

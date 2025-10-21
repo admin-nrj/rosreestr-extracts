@@ -33,12 +33,11 @@ export default registerAs('app', () => ({
     rosreestrUserName: process.env.ROSREESTR_USER_NAME || '',
     puppeteer: {
       headless: process.env.PUPPETEER_HEADLESS !== 'false',
+      downloadsDir: process.env.DOWNLOADS_DIR ? `${process.env.DOWNLOADS_DIR}/orders` : './downloads/orders',
       screenshotsDir: process.env.DOWNLOADS_DIR
         ? `${process.env.DOWNLOADS_DIR}/screenshots`
         : './downloads/screenshots',
-      captchaDir: process.env.DOWNLOADS_DIR
-        ? `${process.env.DOWNLOADS_DIR}/screenshots`
-        : './downloads/screenshots',
+      captchaDir: process.env.DOWNLOADS_DIR ? `${process.env.DOWNLOADS_DIR}/screenshots` : './downloads/screenshots',
     },
     codeDelivery: {
       timeoutMs: parseInt(process.env.CODE_DELIVERY_TIMEOUT || '300000', 10),

@@ -56,4 +56,12 @@ export class OrderEntity extends BaseEntity {
     nullable: true
   })
   completedAt?: Date;
+
+  @Column({
+    name: 'last_checked_at',
+    type: 'timestamp with time zone',
+    nullable: true,
+    comment: 'Last time order status was checked'
+  })
+  lastCheckedAt?: Date;
 }

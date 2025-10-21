@@ -4,6 +4,7 @@ import {
   RefreshTokenEntity,
   OrderEntity,
   RosreestrUserEntity,
+  WorkerScheduleEntity,
 } from '@rosreestr-extracts/entities';
 import * as dotenv from 'dotenv';
 
@@ -21,7 +22,7 @@ export const dataSourceOptions: DataSourceOptions = {
   username: process.env.DB_USERNAME || 'postgres',
   password: process.env.DB_PASSWORD || 'postgres',
   database: process.env.DB_NAME || 'rosreestr_extracts',
-  entities: [UserEntity, RefreshTokenEntity, OrderEntity, RosreestrUserEntity],
+  entities: [UserEntity, RefreshTokenEntity, OrderEntity, RosreestrUserEntity, WorkerScheduleEntity],
   migrations: ['libs/database/src/migrations/*.ts'],
   synchronize: false, // Always false for production
   logging: process.env.DB_LOGGING === 'true',

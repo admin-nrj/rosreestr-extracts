@@ -10,6 +10,7 @@ service OrdersService {
   rpc GetAllOrders (GetAllOrdersRequest) returns (GetAllOrdersResponse);
   rpc GetOrder (GetOrderRequest) returns (OrderResponse);
   rpc UpdateOrder (UpdateOrderRequest) returns (OrderResponse);
+  rpc GetRegisteredOrders (GetRegisteredOrdersRequest) returns (GetRegisteredOrdersResponse);
 }
 
 message Order {
@@ -27,6 +28,7 @@ message Order {
   optional google.protobuf.Timestamp completed_at = 12;
   optional google.protobuf.Timestamp createdAt = 13;
   optional google.protobuf.Timestamp updatedAt = 14;
+  optional google.protobuf.Timestamp last_checked_at = 15;
 }
 
 message GetAllOrdersRequest {}
@@ -62,4 +64,11 @@ message UpdateOrderRequest {
   optional google.protobuf.Timestamp rosreestr_registration_started_at = 8;
   optional google.protobuf.Timestamp rosreestr_registered_at = 9;
   optional google.protobuf.Timestamp completed_at = 10;
+  optional google.protobuf.Timestamp last_checked_at = 11;
+}
+
+message GetRegisteredOrdersRequest {}
+message GetRegisteredOrdersResponse {
+  repeated Order orders = 1;
+  optional common.Error error = 2;
 }

@@ -13,5 +13,8 @@ export * from './object.utils';
 // Graceful shutdown utilities
 export * from './graceful-shutdown.utils';
 
+// Async utilities
+export * from './async.utils';
+
 // RxJS operators
 export * from './operators/throw-on-grpc-error.operator';

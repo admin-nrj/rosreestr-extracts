@@ -1,14 +1,17 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigType } from '@nestjs/config';
 import { ClientsModule, Transport } from '@nestjs/microservices';
+import { ScheduleModule } from '@nestjs/schedule';
+import { TypeOrmModule } from '@nestjs/typeorm';
 import { OrderProcessor } from './order.processor';
+import { OrderDownloadProcessor } from './order-download.processor';
 import { QueueModule } from '@rosreestr-extracts/queue';
 import { DalModule } from '@rosreestr-extracts/dal';
 import { DatabaseModule } from '@rosreestr-extracts/database';
 import { CryptoModule } from '@rosreestr-extracts/crypto';
 import { RedisPubSubModule } from '@rosreestr-extracts/redis-pubsub';
 import { databaseConfig, appConfig, redisConfig, cryptoConfig } from '@rosreestr-extracts/config';
-import { RosreestrUserEntity } from '@rosreestr-extracts/entities';
+import { RosreestrUserEntity, WorkerScheduleEntity } from '@rosreestr-extracts/entities';
 import {
   ORDERS_PACKAGE_NAME,
   ROSREESTR_USERS_PACKAGE_NAME,
@@ -18,6 +21,8 @@ import { ORDERS_PROTO_PATH, ROSREESTR_USERS_PROTO_PATH, ANOMALY_QUESTIONS_PROTO_
 import { RosreestrBrowserService } from './services/rosreestr-browser.service';
 import { RosreestrAuthService } from './services/rosreestr-auth.service';
 import { RosreestrOrderService } from './services/rosreestr-order.service';
+import { RosreestrOrderDownloaderService } from './services/rosreestr-order-downloader.service';
+import { WorkerScheduleService } from './services/worker-schedule.service';
 
 /**
  * Worker Module
@@ -29,8 +34,9 @@ import { RosreestrOrderService } from './services/rosreestr-order.service';
       isGlobal: true,
       load: [databaseConfig, appConfig, redisConfig, cryptoConfig],
     }),
+    ScheduleModule.forRoot(),
     DatabaseModule.forRoot({
-      entities: [RosreestrUserEntity],
+      entities: [RosreestrUserEntity, WorkerScheduleEntity],
     }),
     QueueModule.forConsumer(),
     DalModule,
@@ -89,9 +95,12 @@ import { RosreestrOrderService } from './services/rosreestr-order.service';
   ],
   providers: [
     OrderProcessor,
+    OrderDownloadProcessor,
     RosreestrBrowserService,
     RosreestrAuthService,
     RosreestrOrderService,
+    RosreestrOrderDownloaderService,
+    WorkerScheduleService,
   ],
 })
 export class AppModule {}

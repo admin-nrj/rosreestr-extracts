@@ -1,5 +1,5 @@
 import { InjectQueue, Process, Processor } from '@nestjs/bull';
-import { Inject, Logger, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
+import { Inject, Logger, OnModuleDestroy } from '@nestjs/common';
 import { Job, Queue } from 'bull';
 import { ClientGrpc } from '@nestjs/microservices';
 import { firstValueFrom } from 'rxjs';
@@ -7,11 +7,7 @@ import { ORDER_JOB_NAMES, ORDER_QUEUE_NAME, OrderJobData, QUEUE_CONFIG } from '@
 import { CryptoService } from '@rosreestr-extracts/crypto';
 import {
   ORDERS_PACKAGE_NAME,
-  ORDERS_SERVICE_NAME,
-  OrdersServiceClient,
-  ROSREESTR_USERS_PACKAGE_NAME,
-  ROSREESTR_USERS_SERVICE_NAME,
-  RosreestrUsersServiceClient
+  ROSREESTR_USERS_PACKAGE_NAME
 } from '@rosreestr-extracts/interfaces';
 import { convertDatesToTimestamp, getErrorMessage, getErrorStack } from '@rosreestr-extracts/utils';
 import { appConfig, cryptoConfig } from '@rosreestr-extracts/config';
@@ -23,97 +19,28 @@ import { RosreestrAuthService } from './services/rosreestr-auth.service';
 import { Page } from 'puppeteer';
 import { RosreestrOrderService } from './services/rosreestr-order.service';
 import { PlaceOrderResult } from './interfaces/place-order-result.interface';
+import { BaseRosreestrProcessor } from './processors/base-rosreestr.processor';
 
 /**
  * Order Processor
  * Processes orders from the queue using Rosreestr user credentials
  */
 @Processor(ORDER_QUEUE_NAME)
-export class OrderProcessor implements OnModuleInit, OnModuleDestroy {
-  private readonly logger = new Logger(OrderProcessor.name);
-  private ordersServiceClient: OrdersServiceClient;
-  private rosreestrUsersServiceClient: RosreestrUsersServiceClient;
-  private rosreestrUserId: number;
-  private initializationPromise: Promise<void>;
-  private isInitialized = false;
+export class OrderProcessor extends BaseRosreestrProcessor implements OnModuleDestroy {
+  protected readonly logger = new Logger(OrderProcessor.name);
 
   constructor(
-    @Inject(ORDERS_PACKAGE_NAME) private readonly ordersGrpcClient: ClientGrpc,
-    @Inject(ROSREESTR_USERS_PACKAGE_NAME) private readonly rosreestrUsersGrpcClient: ClientGrpc,
+    @Inject(ORDERS_PACKAGE_NAME) ordersGrpcClient: ClientGrpc,
+    @Inject(ROSREESTR_USERS_PACKAGE_NAME) rosreestrUsersGrpcClient: ClientGrpc,
+    @Inject(appConfig.KEY) appCfg: ConfigType<typeof appConfig>,
+    browserService: RosreestrBrowserService,
     @InjectQueue(ORDER_QUEUE_NAME) private readonly orderQueue: Queue<OrderJobData>,
     private readonly cryptoService: CryptoService,
-    @Inject(cryptoConfig.KEY)
-    private readonly cryptoCfg: ConfigType<typeof cryptoConfig>,
-    @Inject(appConfig.KEY)
-    private readonly appCfg: ConfigType<typeof appConfig>,
-    private readonly browserService: RosreestrBrowserService,
+    @Inject(cryptoConfig.KEY) private readonly cryptoCfg: ConfigType<typeof cryptoConfig>,
     private readonly authService: RosreestrAuthService,
     private readonly orderService: RosreestrOrderService
-  ) {}
-
-  async onModuleInit() {
-    this.initializationPromise = this.initialize();
-    await this.initializationPromise;
-  }
-
-  /**
-   * Initialize the processor with Rosreestr user and browser
-   */
-  private async initialize(): Promise<void> {
-    this.logger.log('Starting OrderProcessor initialization...');
-
-    this.ordersServiceClient = this.ordersGrpcClient.getService<OrdersServiceClient>(ORDERS_SERVICE_NAME);
-    this.rosreestrUsersServiceClient =
-      this.rosreestrUsersGrpcClient.getService<RosreestrUsersServiceClient>(ROSREESTR_USERS_SERVICE_NAME);
-
-    // Verify Rosreestr user exists on startup via gRPC
-    try {
-      const response = await firstValueFrom(
-        this.rosreestrUsersServiceClient.getRosreestrUserByUsername({
-          username: this.appCfg.worker.rosreestrUserName,
-        })
-      );
-
-      if (response.error || !response.rosreestrUser) {
-        const errorMsg = `Rosreestr user '${this.appCfg.worker.rosreestrUserName}' not found. Service cannot start. ${
-          response.error?.message || ''
-        }`;
-        this.logger.error(errorMsg);
-        throw new Error(errorMsg);
-      }
-
-      this.rosreestrUserId = response.rosreestrUser.id!;
-      this.logger.log(
-        `OrderProcessor initialized for Rosreestr User: ${
-          response.rosreestrUser.username} (ID: ${response.rosreestrUser.id})`
-      );
-
-      // Initialize Puppeteer browser
-      await this.browserService.initialize();
-
-      this.isInitialized = true;
-      this.logger.log('OrderProcessor initialization completed successfully');
-    } catch (error) {
-      this.logger.error('Failed to initialize OrderProcessor:', error);
-      throw error;
-    }
-  }
-
-  /**
-   * Wait for initialization to complete
-   * This ensures that rosreestrUserId and browser are ready
-   */
-  private async ensureInitialized(): Promise<void> {
-    if (this.isInitialized) {
-      return;
-    }
-
-    this.logger.log('Waiting for OrderProcessor initialization to complete...');
-    await this.initializationPromise;
-
-    if (!this.isInitialized) {
-      throw new Error('OrderProcessor initialization failed');
-    }
+  ) {
+    super(ordersGrpcClient, rosreestrUsersGrpcClient, appCfg, browserService);
   }
 
   async onModuleDestroy() {

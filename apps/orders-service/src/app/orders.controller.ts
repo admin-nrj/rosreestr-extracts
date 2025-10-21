@@ -8,6 +8,7 @@ import {
   GetOrderRequest,
   OrderResponse,
   UpdateOrderRequest,
+  GetRegisteredOrdersResponse,
   OrdersServiceController,
 } from '@rosreestr-extracts/interfaces';
 
@@ -37,5 +38,10 @@ export class OrdersController implements OrdersServiceController {
   @GrpcMethod('OrdersService', 'UpdateOrder')
   async updateOrder(request: UpdateOrderRequest): Promise<OrderResponse> {
     return this.ordersService.updateOrder(request);
+  }
+
+  @GrpcMethod('OrdersService', 'GetRegisteredOrders')
+  async getRegisteredOrders(): Promise<GetRegisteredOrdersResponse> {
+    return this.ordersService.getRegisteredOrders();
   }
 }

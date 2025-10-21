@@ -1,8 +1,9 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { IsNull, Not, Repository } from 'typeorm';
 import { OrderEntity } from '@rosreestr-extracts/entities';
 import { IOrderRepository } from '../interfaces/order-repository.interface';
+import { OrderStatus } from '@rosreestr-extracts/constants';
 
 /**
  * Order repository implementation
@@ -68,5 +69,22 @@ export class OrderRepository implements IOrderRepository {
 
   async restore(id: number): Promise<void> {
     await this.repository.restore(id);
+  }
+
+  /**
+   * Find registered orders that need status checking
+   * @returns Orders where is_complete=false AND status=REGISTERED AND rosreestr_order_num IS NOT NULL
+   */
+  async findRegisteredOrders(): Promise<OrderEntity[]> {
+    return this.repository.find({
+      where: {
+        isComplete: false,
+        status: OrderStatus.REGISTERED,
+        rosreestrOrderNum: Not(IsNull()),
+      },
+      order: {
+        rosreestrRegisteredAt: 'ASC', // Check oldest orders first
+      },
+    })
   }
 }

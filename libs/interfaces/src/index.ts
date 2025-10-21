@@ -26,7 +26,9 @@ export {
   ORDERS_PACKAGE_NAME,
   OrdersServiceClient,
   OrdersServiceController,
-  OrdersServiceControllerMethods
+  OrdersServiceControllerMethods,
+  GetRegisteredOrdersResponse,
+  GetRegisteredOrdersRequest
 } from './orders';
 export {
   RosreestrUser,

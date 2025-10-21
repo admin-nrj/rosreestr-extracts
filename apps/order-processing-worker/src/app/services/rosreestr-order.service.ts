@@ -4,6 +4,7 @@ import { AxiosInstance } from 'axios';
 import { CadastralSearchResponse, PlaceOrderResult, UploadResponse } from '../interfaces/place-order-result.interface';
 import { OrderStatus } from '@rosreestr-extracts/constants';
 import { createAxiosInstance } from '../common/axios.factory';
+import { randomPause } from '@rosreestr-extracts/utils';
 
 @Injectable()
 export class RosreestrOrderService {
@@ -34,19 +35,19 @@ export class RosreestrOrderService {
 
       const objectData = searchResponse.elements[0];
       this.logger.log(`Found object: ${objectData.cadastralNumber} - ${objectData.address}`);
-      await this.randomPause();
+      await randomPause();
 
       // Step 2: Get current user access key
       this.logger.log('Step 2: Getting current user access key');
       const accessKey = await this.getCurrentUserAccessKey(cookieString);
       this.logger.log(`Access key retrieved: ${accessKey}`);
-      await this.randomPause();
+      await randomPause();
 
       // Step 3: Upload statement data
       this.logger.log('Step 3: Uploading statement data');
       const uploadResponse = await this.uploadStatement(cadNum, objectData, accessKey, cookieString);
       this.logger.log(`Upload response: ${JSON.stringify(uploadResponse)}`);
-      await this.randomPause();
+      await randomPause();
 
       // Step 4: Finish request and get order number
       this.logger.log('Step 4: Finishing request');
@@ -311,15 +312,6 @@ export class RosreestrOrderService {
       const v = c === 'x' ? r : (r & 0x3) | 0x8;
       return v.toString(16);
     });
-  }
-
-  /**
-   * Random pause between 1-3 seconds
-   */
-  private async randomPause(): Promise<void> {
-    const delay = Math.floor(Math.random() * 2000) + 1000; // 1000-3000ms
-    this.logger.log(`Pausing for ${delay}ms`);
-    await new Promise((resolve) => setTimeout(resolve, delay));
   }
 
   /**

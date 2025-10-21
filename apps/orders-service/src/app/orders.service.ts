@@ -10,6 +10,7 @@ import {
   GetOrderRequest,
   OrderResponse,
   UpdateOrderRequest,
+  GetRegisteredOrdersResponse,
   Order,
   ErrorCode,
 } from '@rosreestr-extracts/interfaces';
@@ -133,6 +134,30 @@ export class OrdersService {
     } catch (error) {
       Logger.error('[updateOrder] error: ', getErrorMessage(error));
       return createErrorResponse(ErrorCode.INTERNAL_ERROR, 'Failed to update order')
+    }
+  }
+
+  /**
+   * Get registered orders that need status checking
+   * Returns orders where is_complete=false AND status=REGISTERED AND rosreestr_order_num IS NOT NULL
+   */
+  async getRegisteredOrders(): Promise<GetRegisteredOrdersResponse> {
+    try {
+      const orders = await this.orderRepository.findRegisteredOrders();
+
+      Logger.log(`[getRegisteredOrders] Found ${orders.length} registered orders to check`);
+
+      return {
+        orders: orders.map((order) => this.mapEntityToProto(order)),
+        error: undefined,
+      };
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      Logger.error('[getRegisteredOrders] error: ', errorMessage);
+      return {
+        orders: [],
+        ...createErrorResponse(ErrorCode.INTERNAL_ERROR, 'Failed to fetch registered orders'),
+      };
     }
   }
 

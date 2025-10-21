@@ -1,5 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { Cookie, Page } from 'puppeteer';
+import { Page } from 'puppeteer';
 import { OrderStatus, ROSREESTR_SELECTORS, ROSREESTR_URLS } from '@rosreestr-extracts/constants';
 import { PUPPETEER_TIMEOUTS } from '../common/puppeteer-options.constants';
 import { elementExists, waitForTimeOut } from '../common/puppeteer.utils';
