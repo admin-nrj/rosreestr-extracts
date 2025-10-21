@@ -33,3 +33,13 @@ export interface UploadResponse {
   contentToSign: string | null;
   oneRequestForAllObjects: string | null;
 }
+
+export interface BalanceItem {
+  ordinal: number;
+  mnemo: string;
+  name: string;
+  count: number;
+  totalCount: number;
+}
+
+export type BalanceResponse = BalanceItem[];

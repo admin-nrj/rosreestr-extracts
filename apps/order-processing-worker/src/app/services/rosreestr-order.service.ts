@@ -1,7 +1,12 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Cookie } from 'puppeteer';
 import { AxiosInstance } from 'axios';
-import { CadastralSearchResponse, PlaceOrderResult, UploadResponse } from '../interfaces/place-order-result.interface';
+import {
+  BalanceResponse,
+  CadastralSearchResponse,
+  PlaceOrderResult,
+  UploadResponse,
+} from '../interfaces/place-order-result.interface';
 import { OrderStatus } from '@rosreestr-extracts/constants';
 import { createAxiosInstance } from '../common/axios.factory';
 import { randomPause } from '@rosreestr-extracts/utils';
@@ -23,6 +28,20 @@ export class RosreestrOrderService {
     const cookieString = browserCookies.map((cookie) => `${cookie.name}=${cookie.value}`).join('; ');
 
     try {
+      // Step 0: Check available balance
+      this.logger.log('Step 0: Checking available balance');
+      const availableOrders = await this.checkBalance(cookieString);
+
+      if (availableOrders === null) {
+        this.logger.warn('Failed to check balance, continuing with order placement');
+      } else if (availableOrders <= 0) {
+        this.logger.warn(`Insufficient balance: ${availableOrders} orders available`);
+        return { status: OrderStatus.INSUFFICIENT_BALANCE };
+      } else {
+        this.logger.log(`Balance check passed: ${availableOrders} orders available`);
+      }
+      await randomPause();
+
       // Step 1: Search for cadastral number
       this.logger.log(`Step 1: Searching for cadastral number: ${cadNum}`);
       const searchResponse = await this.searchCadastralNumber(cadNum, cookieString);
@@ -58,6 +77,49 @@ export class RosreestrOrderService {
     } catch (error) {
       this.logger.error('Error placing order:', error);
       throw error;
+    }
+  }
+
+  /**
+   * Check available balance for orders
+   * @returns Number of available orders or null if check failed
+   */
+  private async checkBalance(cookieString: string): Promise<number | null> {
+    try {
+      const response = await this.axiosInstance.get<BalanceResponse>(
+        'https://lk.rosreestr.ru/account-back/finances/operations/total?tab=egrn_subscription',
+        {
+          headers: {
+            Accept: 'application/json, text/plain, */*',
+            'Accept-Language': 'ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7',
+            Connection: 'keep-alive',
+            Cookie: cookieString,
+            Pragma: 'no-cache',
+            Referer: 'https://lk.rosreestr.ru/finances',
+            'Sec-Fetch-Dest': 'empty',
+            'Sec-Fetch-Mode': 'cors',
+            'Sec-Fetch-Site': 'same-origin',
+            'User-Agent':
+              'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36',
+            'sec-ch-ua': '"Google Chrome";v="141", "Not?A_Brand";v="8", "Chromium";v="141"',
+            'sec-ch-ua-mobile': '?0',
+            'sec-ch-ua-platform': '"Linux"',
+          },
+        }
+      );
+
+      // Find the balance item with mnemo "egrn_with_docs_1"
+      const balanceItem = response.data.find((item) => item.mnemo === 'egrn_with_docs_1');
+
+      if (balanceItem) {
+        return balanceItem.count;
+      }
+
+      this.logger.warn('Balance item with mnemo "egrn_with_docs_1" not found');
+      return null;
+    } catch (error) {
+      this.logger.error('Error checking balance:', error);
+      return null;
     }
   }
 
