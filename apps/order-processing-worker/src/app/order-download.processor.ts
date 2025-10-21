@@ -18,6 +18,7 @@ import { FileValidatorService } from './services/file-validator.service';
 import { Cookie } from 'puppeteer';
 import { BaseOrderProcessor } from './processors/base-order.processor';
 import { ORDER_JOB_NAMES, ORDER_QUEUE_NAME, CheckAndDownloadOrderJobData } from '@rosreestr-extracts/queue';
+import { randomPause } from '@rosreestr-extracts/utils';
 
 /**
  * Order Status Checker Processor
@@ -97,8 +98,9 @@ export class OrderDownloadProcessor extends BaseOrderProcessor {
    * @param cookies - Browser cookies for authentication
    */
   private async checkSingleOrder(orderId: number, rosreestrOrderNum: string, cookies: Cookie[]) {
-
     this.logger.log(`Checking order ${orderId} (${rosreestrOrderNum})...`);
+    // Random delay 5-10 seconds to avoid checking orders too frequently
+    await randomPause(5000, 10000)
 
     const statusResult = await this.orderDownloaderService.checkOrderStatus(rosreestrOrderNum, cookies);
 
