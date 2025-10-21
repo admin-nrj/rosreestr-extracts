@@ -23,6 +23,7 @@ export class RosreestrBrowserService implements OnModuleDestroy {
   private readonly logger = new Logger(RosreestrBrowserService.name);
   private browser: Browser | null = null;
   private screenshotsDir: string;
+  private initializationPromise: Promise<void> | null = null;
 
   constructor(
     @Inject(appConfig.KEY)
@@ -32,15 +33,37 @@ export class RosreestrBrowserService implements OnModuleDestroy {
   }
 
   /**
-   * Initialize browser instance
-   * Should be called once during application startup
+   * Initialize browser instance (thread-safe singleton)
+   * Multiple concurrent calls will wait for the same initialization
    */
   async initialize(): Promise<void> {
+    // If already initialized, return immediately
     if (this.browser) {
-      this.logger.warn('Browser already initialized');
+      this.logger.debug('Browser already initialized');
       return;
     }
 
+    // If initialization is in progress, wait for it
+    if (this.initializationPromise !== null) {
+      this.logger.debug('Browser initialization in progress, waiting...');
+      return this.initializationPromise;
+    }
+
+    // Start initialization and store the promise
+    this.initializationPromise = this.doInitialize();
+
+    try {
+      await this.initializationPromise;
+    } finally {
+      // Clear the promise after completion (success or failure)
+      this.initializationPromise = null;
+    }
+  }
+
+  /**
+   * Actual initialization logic
+   */
+  private async doInitialize(): Promise<void> {
     try {
       this.logger.log('Initializing Puppeteer browser...');
       this.logger.log(`Headless mode: ${this.appCfg.worker.puppeteer.headless}`);
@@ -61,6 +84,7 @@ export class RosreestrBrowserService implements OnModuleDestroy {
       this.logger.log('Puppeteer browser initialized successfully');
     } catch (error) {
       this.logger.error('Failed to initialize Puppeteer browser:', error);
+      this.browser = null; // Reset on failure
       throw error;
     }
   }
