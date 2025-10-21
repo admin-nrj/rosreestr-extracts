@@ -18,6 +18,7 @@ import { RosreestrBrowserService } from './services/rosreestr-browser.service';
 import { RosreestrAuthService } from './services/rosreestr-auth.service';
 import { RosreestrOrderService } from './services/rosreestr-order.service';
 import { RosreestrOrderDownloaderService } from './services/rosreestr-order-downloader.service';
+import { FileValidatorService } from './services/file-validator.service';
 
 /**
  * Worker Module
@@ -91,6 +92,7 @@ import { RosreestrOrderDownloaderService } from './services/rosreestr-order-down
     RosreestrAuthService,
     RosreestrOrderService,
     RosreestrOrderDownloaderService,
+    FileValidatorService,
   ],
 })
 export class AppModule {}

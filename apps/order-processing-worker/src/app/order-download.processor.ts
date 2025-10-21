@@ -11,10 +11,10 @@ import {
 import { appConfig, cryptoConfig } from '@rosreestr-extracts/config';
 import { CryptoService } from '@rosreestr-extracts/crypto';
 import { OrderStatus } from '@rosreestr-extracts/constants';
-import { getErrorMessage } from '@rosreestr-extracts/utils';
 import { RosreestrBrowserService } from './services/rosreestr-browser.service';
 import { RosreestrAuthService } from './services/rosreestr-auth.service';
 import { RosreestrOrderDownloaderService } from './services/rosreestr-order-downloader.service';
+import { FileValidatorService } from './services/file-validator.service';
 import { Cookie } from 'puppeteer';
 import { BaseOrderProcessor } from './processors/base-order.processor';
 import { ORDER_JOB_NAMES, ORDER_QUEUE_NAME, CheckAndDownloadOrderJobData } from '@rosreestr-extracts/queue';
@@ -35,6 +35,7 @@ export class OrderDownloadProcessor extends BaseOrderProcessor {
     @Inject(cryptoConfig.KEY) cryptoCfg: ConfigType<typeof cryptoConfig>,
     authService: RosreestrAuthService,
     private readonly orderDownloaderService: RosreestrOrderDownloaderService,
+    private readonly fileValidatorService: FileValidatorService,
     cryptoService: CryptoService,
     @InjectQueue(ORDER_QUEUE_NAME) private readonly orderQueue: Queue<CheckAndDownloadOrderJobData>
   ) {
@@ -96,42 +97,50 @@ export class OrderDownloadProcessor extends BaseOrderProcessor {
    * @param cookies - Browser cookies for authentication
    */
   private async checkSingleOrder(orderId: number, rosreestrOrderNum: string, cookies: Cookie[]) {
-    try {
-      this.logger.log(`Checking order ${orderId} (${rosreestrOrderNum})...`);
 
-      const statusResult = await this.orderDownloaderService.checkOrderStatus(rosreestrOrderNum, cookies);
+    this.logger.log(`Checking order ${orderId} (${rosreestrOrderNum})...`);
 
-      if (statusResult.isReady) {
-        this.logger.log(`Order ${orderId} is ready, downloading files...`);
+    const statusResult = await this.orderDownloaderService.checkOrderStatus(rosreestrOrderNum, cookies);
 
-        // Download files to DOWNLOADS_DIR/orders/
-        const storagePath = await this.orderDownloaderService.downloadOrderFiles(
-          rosreestrOrderNum,
-          statusResult.applicationId,
-          cookies
+    if (statusResult.isReady) {
+      this.logger.log(`Order ${orderId} is ready, downloading files...`);
+
+      // Download files to DOWNLOADS_DIR/orders/
+      const storagePath = await this.orderDownloaderService.downloadOrderFiles(
+        rosreestrOrderNum,
+        statusResult.applicationId,
+        cookies
+      );
+
+      // Validate downloaded file
+      this.logger.log(`Validating downloaded file: ${storagePath}`);
+      const validationResult = await this.fileValidatorService.validateZipFile(storagePath);
+
+      if (!validationResult.isValid) {
+        this.logger.error(
+          `File validation failed for order ${orderId}: ${validationResult.error}`
         );
-
-        // Update order status
-        await this.updateOrder(orderId, {
-          status: OrderStatus.DOWNLOADED,
-          isComplete: true,
-          completedAt: new Date(),
-          lastCheckedAt: new Date(),
-        });
-
-        this.logger.log(`Order ${orderId} completed and files saved to ${storagePath}`);
-      } else {
-        // Not ready yet
-        this.logger.log(`Order ${orderId} not ready yet (status: ${statusResult.status})`);
-
-        await this.updateOrder(orderId, {
-          lastCheckedAt: new Date(),
-        });
+        throw new Error(`File validation failed: ${validationResult.error}`);
       }
-    } catch (error) {
-      this.logger.error(`Error checking order ${orderId}:`, getErrorMessage(error));
-      throw error;
+
+      this.logger.log(`File validation passed for order ${orderId} (size: ${validationResult.fileSize} bytes)`);
+
+      // Update order status
+      await this.updateOrder(orderId, {
+        status: OrderStatus.DOWNLOADED,
+        isComplete: true,
+        completedAt: new Date(),
+        lastCheckedAt: new Date(),
+      });
+
+      this.logger.log(`Order ${orderId} completed and files saved to ${storagePath}`);
+    } else {
+      // Not ready yet
+      this.logger.log(`Order ${orderId} not ready yet (status: ${statusResult.status})`);
+
+      await this.updateOrder(orderId, {
+        lastCheckedAt: new Date(),
+      });
     }
   }
-
 }
