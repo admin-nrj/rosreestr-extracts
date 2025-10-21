@@ -43,3 +43,12 @@ export interface BalanceItem {
 }
 
 export type BalanceResponse = BalanceItem[];
+
+export interface ApplicationResponse {
+  content?: Array<{
+    id: number;
+    requestNumber: string;
+    statusCode: string;
+    requestStatus: string;
+  }>;
+}

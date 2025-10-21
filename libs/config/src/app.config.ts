@@ -31,9 +31,9 @@ export default registerAs('app', () => ({
   // Worker configuration
   worker: {
     rosreestrUserName: process.env.ROSREESTR_USER_NAME || '',
+    orderDownloadsDir: process.env.DOWNLOADS_DIR ? `${process.env.DOWNLOADS_DIR}/orders` : './downloads/orders',
     puppeteer: {
       headless: process.env.PUPPETEER_HEADLESS !== 'false',
-      downloadsDir: process.env.DOWNLOADS_DIR ? `${process.env.DOWNLOADS_DIR}/orders` : './downloads/orders',
       screenshotsDir: process.env.DOWNLOADS_DIR
         ? `${process.env.DOWNLOADS_DIR}/screenshots`
         : './downloads/screenshots',

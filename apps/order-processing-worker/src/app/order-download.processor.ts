@@ -167,7 +167,7 @@ export class OrderDownloadProcessor extends BaseRosreestrProcessor {
         // Download files to DOWNLOADS_DIR/orders/
         const storagePath = await this.orderDownloaderService.downloadOrderFiles(
           order.rosreestrOrderNum || '',
-          order.id || 0,
+          statusResult.applicationId,
           cookies
         );
 
