@@ -2,6 +2,7 @@ import { Logger, OnModuleInit, Inject } from '@nestjs/common';
 import { ConfigType } from '@nestjs/config';
 import { ClientGrpc } from '@nestjs/microservices';
 import { firstValueFrom } from 'rxjs';
+import { Page, Cookie } from 'puppeteer';
 import {
   ORDERS_PACKAGE_NAME,
   ORDERS_SERVICE_NAME,
@@ -10,8 +11,10 @@ import {
   ROSREESTR_USERS_SERVICE_NAME,
   RosreestrUsersServiceClient,
 } from '@rosreestr-extracts/interfaces';
-import { appConfig } from '@rosreestr-extracts/config';
+import { appConfig, cryptoConfig } from '@rosreestr-extracts/config';
 import { RosreestrBrowserService } from '../services/rosreestr-browser.service';
+import { RosreestrAuthService } from '../services/rosreestr-auth.service';
+import { CryptoService } from '@rosreestr-extracts/crypto';
 
 /**
  * Base abstract class for Rosreestr processors
@@ -29,7 +32,10 @@ export abstract class BaseRosreestrProcessor implements OnModuleInit {
     @Inject(ORDERS_PACKAGE_NAME) protected readonly ordersGrpcClient: ClientGrpc,
     @Inject(ROSREESTR_USERS_PACKAGE_NAME) protected readonly rosreestrUsersGrpcClient: ClientGrpc,
     @Inject(appConfig.KEY) protected readonly appCfg: ConfigType<typeof appConfig>,
-    protected readonly browserService: RosreestrBrowserService
+    @Inject(cryptoConfig.KEY) private readonly cryptoCfg: ConfigType<typeof cryptoConfig>,
+    private readonly cryptoService: CryptoService,
+    protected readonly browserService: RosreestrBrowserService,
+    protected readonly authService: RosreestrAuthService,
   ) {}
 
   async onModuleInit() {
@@ -95,5 +101,45 @@ export abstract class BaseRosreestrProcessor implements OnModuleInit {
     if (!this.isInitialized) {
       throw new Error(`${this.constructor.name} initialization failed`);
     }
+  }
+
+  /**
+   * Get Rosreestr user credentials
+   * @returns Decrypted credentials
+   */
+  protected async getCredentials() {
+    const userResponse = await firstValueFrom(
+      this.rosreestrUsersServiceClient.getRosreestrUser({ id: this.rosreestrUserId })
+    );
+
+    if (userResponse.error || !userResponse.rosreestrUser) {
+      throw new Error(`Failed to get Rosreestr user: ${userResponse.error?.message}`);
+    }
+
+    const rosreestrUser = userResponse.rosreestrUser;
+
+    return {
+      username: rosreestrUser.username,
+      guLogin: rosreestrUser.guLogin,
+      password: await this.cryptoService.decrypt(rosreestrUser.passwordEncrypted, this.cryptoCfg.rrSecret),
+    };
+  }
+
+  /**
+   * Ensure page is authenticated and return browser cookies
+   * Thread-safe: multiple concurrent calls will wait for the same authentication
+   *
+   * @param page - Puppeteer page instance
+   * @returns Browser cookies for authenticated session
+   */
+  protected async ensureAuthenticatedPage(page: Page): Promise<Cookie[]> {
+    // Get credentials
+    const credentials = await this.getCredentials();
+
+    // Ensure authentication (thread-safe)
+    await this.authService.ensureAuthenticated(page, credentials);
+
+    // Return browser cookies
+    return await this.browserService.getCookies();
   }
 }

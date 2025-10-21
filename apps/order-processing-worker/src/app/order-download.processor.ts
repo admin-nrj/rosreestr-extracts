@@ -34,13 +34,13 @@ export class OrderDownloadProcessor extends BaseRosreestrProcessor {
     @Inject(ROSREESTR_USERS_PACKAGE_NAME) rosreestrUsersGrpcClient: ClientGrpc,
     @Inject(appConfig.KEY) appCfg: ConfigType<typeof appConfig>,
     browserService: RosreestrBrowserService,
-    @Inject(cryptoConfig.KEY) private readonly cryptoCfg: ConfigType<typeof cryptoConfig>,
-    private readonly authService: RosreestrAuthService,
+    @Inject(cryptoConfig.KEY) cryptoCfg: ConfigType<typeof cryptoConfig>,
+    authService: RosreestrAuthService,
     private readonly orderDownloaderService: RosreestrOrderDownloaderService,
-    private readonly workerScheduleService: WorkerScheduleService,
-    private readonly cryptoService: CryptoService
+    cryptoService: CryptoService,
+    private readonly workerScheduleService: WorkerScheduleService
   ) {
-    super(ordersGrpcClient, rosreestrUsersGrpcClient, appCfg, browserService);
+    super(ordersGrpcClient, rosreestrUsersGrpcClient, appCfg, cryptoCfg, cryptoService, browserService, authService);
   }
 
   /**
@@ -114,38 +114,20 @@ export class OrderDownloadProcessor extends BaseRosreestrProcessor {
 
       this.logger.log(`Found ${orders.length} registered orders to check`);
 
-      // 2. Create new page in existing browser
       page = await this.browserService.createPage();
 
-      // 3. Check authentication
-      const isAuthenticated = await this.authService.checkAuthStatus(page);
+      // Ensure authentication and get cookies
+      const browserCookies = await this.ensureAuthenticatedPage(page);
 
-      if (!isAuthenticated) {
-        this.logger.log('Not authenticated, logging in...');
-        const credentials = await this.getCredentials();
-        await this.authService.login(page, credentials);
-      }
-
-      // 4. Get cookies for Axios requests
-      const cookies = await this.browserService.getCookies();
-
-      // 5. Close page - we'll use Axios from now on
-      await this.browserService.closePage(page);
-      page = null;
-
-      // 6. Check each order
       let checkedCount = 0;
 
       for (const order of orders) {
         try {
-          await this.checkSingleOrder(order, cookies);
+          await this.checkSingleOrder(order, browserCookies);
           checkedCount++;
-
-          // Random pause between checks
           await randomPause();
         } catch (error) {
           this.logger.error(`Error checking order ${order.id}:`, getErrorMessage(error));
-          // Continue with next order
         }
       }
 
@@ -177,7 +159,6 @@ export class OrderDownloadProcessor extends BaseRosreestrProcessor {
     try {
       this.logger.log(`Checking order ${order.id} (${order.rosreestrOrderNum})...`);
 
-      // Check order status
       const statusResult = await this.orderDownloaderService.checkOrderStatus(order.rosreestrOrderNum || '', cookies);
 
       if (statusResult.isReady) {
@@ -211,28 +192,6 @@ export class OrderDownloadProcessor extends BaseRosreestrProcessor {
       this.logger.error(`Error checking order ${order.id}:`, getErrorMessage(error));
       throw error;
     }
-  }
-
-  /**
-   * Get Rosreestr user credentials
-   * @returns Decrypted credentials
-   */
-  private async getCredentials() {
-    const userResponse = await firstValueFrom(
-      this.rosreestrUsersServiceClient.getRosreestrUser({ id: this.rosreestrUserId })
-    );
-
-    if (userResponse.error || !userResponse.rosreestrUser) {
-      throw new Error(`Failed to get Rosreestr user: ${userResponse.error?.message}`);
-    }
-
-    const rosreestrUser = userResponse.rosreestrUser;
-
-    return {
-      username: rosreestrUser.username,
-      guLogin: rosreestrUser.guLogin,
-      password: await this.cryptoService.decrypt(rosreestrUser.passwordEncrypted, this.cryptoCfg.rrSecret),
-    };
   }
 
   /**

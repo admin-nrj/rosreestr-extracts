@@ -15,9 +15,9 @@ import { ConfigType } from '@nestjs/config';
 import { OrderStatus } from '@rosreestr-extracts/constants';
 import { OrderEntity } from '@rosreestr-extracts/entities';
 import { RosreestrBrowserService } from './services/rosreestr-browser.service';
-import { RosreestrAuthService } from './services/rosreestr-auth.service';
 import { Page } from 'puppeteer';
 import { RosreestrOrderService } from './services/rosreestr-order.service';
+import { RosreestrAuthService } from './services/rosreestr-auth.service';
 import { PlaceOrderResult } from './interfaces/place-order-result.interface';
 import { BaseRosreestrProcessor } from './processors/base-rosreestr.processor';
 
@@ -35,12 +35,12 @@ export class OrderProcessor extends BaseRosreestrProcessor implements OnModuleDe
     @Inject(appConfig.KEY) appCfg: ConfigType<typeof appConfig>,
     browserService: RosreestrBrowserService,
     @InjectQueue(ORDER_QUEUE_NAME) private readonly orderQueue: Queue<OrderJobData>,
-    private readonly cryptoService: CryptoService,
-    @Inject(cryptoConfig.KEY) private readonly cryptoCfg: ConfigType<typeof cryptoConfig>,
-    private readonly authService: RosreestrAuthService,
+    cryptoService: CryptoService,
+    @Inject(cryptoConfig.KEY) cryptoCfg: ConfigType<typeof cryptoConfig>,
+    authService: RosreestrAuthService,
     private readonly orderService: RosreestrOrderService
   ) {
-    super(ordersGrpcClient, rosreestrUsersGrpcClient, appCfg, browserService);
+    super(ordersGrpcClient, rosreestrUsersGrpcClient, appCfg, cryptoCfg, cryptoService, browserService, authService);
   }
 
   async onModuleDestroy() {
@@ -66,30 +66,8 @@ export class OrderProcessor extends BaseRosreestrProcessor implements OnModuleDe
         status: OrderStatus.PROCESSING,
       });
 
-      // 2. Get fresh Rosreestr user data with credentials via gRPC
-      const userResponse = await firstValueFrom(
-        this.rosreestrUsersServiceClient.getRosreestrUser({ id: this.rosreestrUserId })
-      );
-
-      if (userResponse.error || !userResponse.rosreestrUser) {
-        throw new Error(
-          `Rosreestr user with ID ${this.rosreestrUserId} not found: ${userResponse.error?.message || ''}`
-        );
-      }
-
-      const rosreestrUser = userResponse.rosreestrUser;
-
-      // 3. Decrypt credentials
-      const credentials = {
-        username: rosreestrUser.username,
-        guLogin: rosreestrUser.guLogin,
-        password: await this.cryptoService.decrypt(rosreestrUser.passwordEncrypted, this.cryptoCfg.rrSecret),
-      };
-
-      this.logger.log(`[Job ${job.id}] Using Rosreestr credentials for user: ${credentials.username}`);
-
       // 4. Process order with Rosreestr API
-      const result = await this.processWithRosreestrApi(orderId, cadNum, credentials);
+      const result = await this.processWithRosreestrApi(orderId, cadNum);
 
       await this.updateOrder(orderId, {
         status: result.status,
@@ -181,7 +159,6 @@ export class OrderProcessor extends BaseRosreestrProcessor implements OnModuleDe
   private async processWithRosreestrApi(
     orderId: number,
     cadNum: string,
-    credentials: { username: string; guLogin: string; password: string }
   ): Promise<PlaceOrderResult> {
     this.logger.log(`Processing with Rosreestr API - orderId: ${orderId}, cadNum: ${cadNum}`);
 
@@ -190,18 +167,9 @@ export class OrderProcessor extends BaseRosreestrProcessor implements OnModuleDe
     try {
       page = await this.browserService.createPage();
 
-      // Check authentication status
-      const isAuthenticated = await this.authService.checkAuthStatus(page);
-
-      // If not authenticated, perform login
-      if (!isAuthenticated) {
-        this.logger.log('Rosreestr user not authenticated, performing login...');
-        await this.authService.login(page, credentials);
-      }
-
-      // After successful authentication, use fetch API to search for cadastral object
+      // Ensure authentication and get cookies
+      const browserCookies = await this.ensureAuthenticatedPage(page);
       this.logger.log(`Making fetch request for cadastral number: ${cadNum}`);
-      const browserCookies = await this.browserService.getCookies();
 
       return await this.orderService.placeOrderByFetch(cadNum, browserCookies);
     } catch (error) {

@@ -31,6 +31,8 @@ export interface RosreestrCredentials {
 export class RosreestrAuthService implements OnModuleInit {
   private readonly logger = new Logger(RosreestrAuthService.name);
   private anomalyQuestionsService: AnomalyQuestionsServiceClient;
+  private authenticationPromise: Promise<void> | null = null;
+  private isAuthenticated = false;
 
   constructor(
     @Inject(appConfig.KEY)
@@ -43,6 +45,76 @@ export class RosreestrAuthService implements OnModuleInit {
   onModuleInit() {
     this.anomalyQuestionsService =
       this.anomalyQuestionsClient.getService<AnomalyQuestionsServiceClient>(ANOMALY_QUESTIONS_SERVICE_NAME);
+  }
+
+  /**
+   * Ensure authentication with race-condition protection
+   * Multiple concurrent calls will wait for the same authentication process
+   * @param page - Puppeteer page instance
+   * @param credentials - Rosreestr credentials
+   */
+  async ensureAuthenticated(page: Page, credentials: RosreestrCredentials): Promise<void> {
+    // If already authenticated, return immediately
+    if (this.isAuthenticated) {
+      this.logger.debug('Already authenticated (cached)');
+      return;
+    }
+
+    // If authentication is in progress, wait for it
+    if (this.authenticationPromise !== null) {
+      this.logger.debug('Authentication in progress, waiting...');
+      return this.authenticationPromise;
+    }
+
+    // Start authentication and store the promise
+    this.authenticationPromise = this.doAuthentication(page, credentials);
+
+    try {
+      await this.authenticationPromise;
+    } finally {
+      // Clear the promise after completion (success or failure)
+      this.authenticationPromise = null;
+    }
+  }
+
+  /**
+   * Actual authentication logic
+   * @param page - Puppeteer page instance
+   * @param credentials - Rosreestr credentials
+   */
+  private async doAuthentication(page: Page, credentials: RosreestrCredentials): Promise<void> {
+    try {
+      this.logger.log('Starting authentication process...');
+
+      // Check current authentication status
+      const authenticated = await this.checkAuthStatus(page);
+
+      if (authenticated) {
+        this.isAuthenticated = true;
+        this.logger.log('Authentication confirmed');
+        return;
+      }
+
+      // Perform login
+      this.logger.log('Not authenticated, performing login...');
+      await this.login(page, credentials);
+
+      this.isAuthenticated = true;
+      this.logger.log('Authentication completed successfully');
+    } catch (error) {
+      this.logger.error('Authentication failed:', error);
+      this.isAuthenticated = false;
+      throw error;
+    }
+  }
+
+  /**
+   * Reset authentication state (for testing or re-authentication)
+   */
+  resetAuthenticationState(): void {
+    this.isAuthenticated = false;
+    this.authenticationPromise = null;
+    this.logger.log('Authentication state reset');
   }
 
   /**
