@@ -8,6 +8,7 @@ export const ORDER_QUEUE_NAME = 'order-processing';
  */
 export const ORDER_JOB_NAMES = {
   PROCESS_ORDER: 'process-order',
+  CHECK_AND_DOWNLOAD_ORDER: 'check-and-download-order',
 } as const;
 
 /**

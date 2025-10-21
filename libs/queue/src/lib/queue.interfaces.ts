@@ -8,6 +8,14 @@ export interface OrderJobData {
 }
 
 /**
+ * Payload for check and download order jobs
+ */
+export interface CheckAndDownloadOrderJobData {
+  orderId: number;
+  rosreestrOrderNum: string;
+}
+
+/**
  * Result of order processing
  */
 export interface OrderProcessingResult {
