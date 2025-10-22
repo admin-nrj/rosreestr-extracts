@@ -1,4 +1,4 @@
-import { Logger } from '@nestjs/common';
+import { LoggerService } from '@nestjs/common';
 import { Job, Queue } from 'bull';
 import { firstValueFrom } from 'rxjs';
 import { OrderEntity } from '@rosreestr-extracts/entities';
@@ -12,7 +12,7 @@ import { BaseRosreestrProcessor } from './base-rosreestr.processor';
  * Extends BaseRosreestrProcessor with common order processing logic
  */
 export abstract class BaseOrderProcessor extends BaseRosreestrProcessor {
-  protected abstract readonly logger: Logger;
+  protected abstract readonly logger: LoggerService;
 
   /**
    * Update order status via gRPC

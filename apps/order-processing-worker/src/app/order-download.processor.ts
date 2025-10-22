@@ -1,4 +1,4 @@
-import { Logger, Inject } from '@nestjs/common';
+import { Inject } from '@nestjs/common';
 import { ConfigType } from '@nestjs/config';
 import { ClientGrpc } from '@nestjs/microservices';
 import { InjectQueue, Process, Processor } from '@nestjs/bull';
@@ -24,6 +24,7 @@ import {
   QUEUE_CONFIG,
 } from '@rosreestr-extracts/queue';
 import { randomPause } from '@rosreestr-extracts/utils';
+import { createWinstonLogger, LOGGER_CONFIGS } from '@rosreestr-extracts/logger';
 
 /**
  * Order Status Checker Processor
@@ -31,7 +32,7 @@ import { randomPause } from '@rosreestr-extracts/utils';
  */
 @Processor(ORDER_QUEUE_NAME)
 export class OrderDownloadProcessor extends BaseOrderProcessor {
-  protected readonly logger = new Logger(OrderDownloadProcessor.name);
+  protected readonly logger = createWinstonLogger(LOGGER_CONFIGS.ORDER_DOWNLOAD_PROCESSOR);
 
   constructor(
     @Inject(ORDERS_PACKAGE_NAME) ordersGrpcClient: ClientGrpc,
@@ -76,10 +77,12 @@ export class OrderDownloadProcessor extends BaseOrderProcessor {
       if (page) {
         await this.browserService
           .takeScreenshot(page, orderId, 'download-error')
-          .catch((e) => this.logger.error('Screenshot failed:', e));
+          .catch((e: unknown) => {
+            this.logger.error('Screenshot failed:', e);
+          });
       }
 
-      await this.handleJobError(job, orderId, error as Error, async (j) => {
+      await this.handleJobError(job, orderId, error as Error, async (j: Job<CheckAndDownloadOrderJobData>) => {
         await this.handleAttemptsExhausted(j);
       });
     } finally {

@@ -1,4 +1,4 @@
-import { Logger, OnModuleInit, Inject } from '@nestjs/common';
+import { LoggerService, OnModuleInit, Inject } from '@nestjs/common';
 import { ConfigType } from '@nestjs/config';
 import { ClientGrpc } from '@nestjs/microservices';
 import { firstValueFrom } from 'rxjs';
@@ -21,7 +21,7 @@ import { CryptoService } from '@rosreestr-extracts/crypto';
  * Provides shared initialization logic for Rosreestr user verification and browser setup
  */
 export abstract class BaseRosreestrProcessor implements OnModuleInit {
-  protected abstract readonly logger: Logger;
+  protected abstract readonly logger: LoggerService;
   protected ordersServiceClient: OrdersServiceClient;
   protected rosreestrUsersServiceClient: RosreestrUsersServiceClient;
   protected rosreestrUserId: number;

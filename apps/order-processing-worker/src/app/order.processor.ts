@@ -1,5 +1,5 @@
 import { InjectQueue, Process, Processor } from '@nestjs/bull';
-import { Inject, Logger, OnModuleDestroy } from '@nestjs/common';
+import { Inject, LoggerService, OnModuleDestroy } from '@nestjs/common';
 import { Job, Queue } from 'bull';
 import { ClientGrpc } from '@nestjs/microservices';
 import {
@@ -22,6 +22,7 @@ import { RosreestrAuthService } from './services/rosreestr-auth.service';
 import { ProfileInfo, PlaceOrderResult } from './interfaces/place-order-result.interface';
 import { BaseOrderProcessor } from './processors/base-order.processor';
 import { cookiesToString } from './common/puppeteer.utils';
+import { createWinstonLogger, LOGGER_CONFIGS } from '@rosreestr-extracts/logger';
 
 /**
  * Order Processor
@@ -29,7 +30,7 @@ import { cookiesToString } from './common/puppeteer.utils';
  */
 @Processor(ORDER_QUEUE_NAME)
 export class OrderProcessor extends BaseOrderProcessor implements OnModuleDestroy {
-  protected readonly logger = new Logger(OrderProcessor.name);
+  protected readonly logger: LoggerService = createWinstonLogger(LOGGER_CONFIGS.ORDER_PROCESSOR);
   sessionCookie: string
   private profileInfo: ProfileInfo;
 
@@ -104,7 +105,7 @@ export class OrderProcessor extends BaseOrderProcessor implements OnModuleDestro
         rosreestrUserId: null,
       });
 
-      await this.handleJobError(job, orderId, error as Error, async (j) => {
+      await this.handleJobError(job, orderId, error as Error, async (j: Job<OrderJobData>) => {
         await this.handleAttemptsExhausted(j);
       });
     }
