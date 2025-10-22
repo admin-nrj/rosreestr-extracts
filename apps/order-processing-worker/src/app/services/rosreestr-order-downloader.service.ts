@@ -7,6 +7,7 @@ import { createAxiosInstance } from '../common/axios.factory';
 import * as fs from 'fs';
 import * as path from 'path';
 import { ApplicationResponse } from '../interfaces/place-order-result.interface';
+import { cookiesToString } from '../common/puppeteer.utils';
 
 /**
  * Result of order status check
@@ -40,7 +41,7 @@ export class RosreestrOrderDownloaderService {
    * @returns Order status check result
    */
   async checkOrderStatus(orderNum: string, cookies: Cookie[]): Promise<OrderStatusCheckResult> {
-    const cookieString = cookies.map((cookie) => `${cookie.name}=${cookie.value}`).join('; ');
+    const cookieString = cookiesToString(cookies);
     this.logger.log(`Checking status for order: ${orderNum}`);
 
     const response = await this.axiosInstance.post<ApplicationResponse>(
@@ -93,7 +94,7 @@ export class RosreestrOrderDownloaderService {
    * @returns Path to downloaded file
    */
   async downloadOrderFiles(orderNum: string, applicationId: number, cookies: Cookie[]): Promise<string> {
-    const cookieString = cookies.map((cookie) => `${cookie.name}=${cookie.value}`).join('; ');
+    const cookieString = cookiesToString(cookies);
 
     try {
       this.logger.log(`Downloading file for order: ${orderNum}`);

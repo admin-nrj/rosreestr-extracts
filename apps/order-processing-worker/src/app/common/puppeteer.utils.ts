@@ -1,4 +1,4 @@
-import { Page } from 'puppeteer';
+import { Page, Cookie } from 'puppeteer';
 import * as fs from 'fs';
 import * as path from 'path';
 
@@ -55,5 +55,14 @@ export async function downloadFile(url: string, page: Page, pathToSave: string):
 }
 
 export async function deleteFile(fullFileName: string): Promise<void> {
-  await fs.promises.unlink(fullFileName)
+  await fs.promises.unlink(fullFileName);
+}
+
+/**
+ * Convert browser cookies array to cookie string format
+ * @param cookies - Array of cookies from Puppeteer
+ * @returns Cookie string in format "name1=value1; name2=value2"
+ */
+export function cookiesToString(cookies: Cookie[]): string {
+  return cookies.map((cookie) => `${cookie.name}=${cookie.value}`).join('; ');
 }

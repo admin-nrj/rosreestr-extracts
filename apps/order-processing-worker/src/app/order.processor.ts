@@ -18,8 +18,9 @@ import { RosreestrBrowserService } from './services/rosreestr-browser.service';
 import { Page } from 'puppeteer';
 import { RosreestrOrderService } from './services/rosreestr-order.service';
 import { RosreestrAuthService } from './services/rosreestr-auth.service';
-import { PlaceOrderResult } from './interfaces/place-order-result.interface';
+import { ProfileInfo, PlaceOrderResult } from './interfaces/place-order-result.interface';
 import { BaseOrderProcessor } from './processors/base-order.processor';
+import { cookiesToString } from './common/puppeteer.utils';
 
 /**
  * Order Processor
@@ -28,6 +29,8 @@ import { BaseOrderProcessor } from './processors/base-order.processor';
 @Processor(ORDER_QUEUE_NAME)
 export class OrderProcessor extends BaseOrderProcessor implements OnModuleDestroy {
   protected readonly logger = new Logger(OrderProcessor.name);
+  sessionCookie: string
+  private profileInfo: ProfileInfo;
 
   constructor(
     @Inject(ORDERS_PACKAGE_NAME) ordersGrpcClient: ClientGrpc,
@@ -124,8 +127,13 @@ export class OrderProcessor extends BaseOrderProcessor implements OnModuleDestro
       // Ensure authentication and get cookies
       const browserCookies = await this.ensureAuthenticatedPage(page);
       this.logger.log(`Making fetch request for cadastral number: ${cadNum}`);
+      const cookieString = cookiesToString(browserCookies);
+      if (this.sessionCookie !== cookieString) {
+        this.sessionCookie = cookieString;
+        this.profileInfo = await this.orderService.fetchUserProfileInfo(browserCookies)
+      }
 
-      return await this.orderService.placeOrderByFetch(cadNum, browserCookies);
+      return await this.orderService.placeOrderByFetch(cadNum, browserCookies, this.profileInfo);
     } catch (error) {
       this.logger.error('Error in processWithRosreestrApi:', error);
 

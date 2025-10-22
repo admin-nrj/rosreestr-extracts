@@ -4,12 +4,15 @@ import { AxiosInstance } from 'axios';
 import {
   BalanceResponse,
   CadastralSearchResponse,
+  ProfileInfo,
   PlaceOrderResult,
-  UploadResponse,
+  ProfileInfoResponse,
+  UploadResponse
 } from '../interfaces/place-order-result.interface';
 import { OrderStatus } from '@rosreestr-extracts/constants';
 import { createAxiosInstance } from '../common/axios.factory';
 import { randomPause } from '@rosreestr-extracts/utils';
+import { cookiesToString } from '../common/puppeteer.utils';
 
 @Injectable()
 export class RosreestrOrderService {
@@ -21,11 +24,119 @@ export class RosreestrOrderService {
   }
 
   /**
+   * Fetch user profile information from Rosreestr portal
+   * @param oid - User ID from PC_USER_WAS_AUTHORIZED cookie
+   * @param cookieString - Cookie string for authentication
+   * @returns Profile information
+   */
+  private async fetchProfileInfo(oid: string, cookieString: string): Promise<ProfileInfoResponse> {
+    try {
+      const response = await this.axiosInstance.get<ProfileInfoResponse>(
+        `https://lk.rosreestr.ru/account-back/profile/info?oid=${oid}`,
+        {
+          headers: {
+            Accept: 'application/json, text/plain, */*',
+            'Accept-Language': 'ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7',
+            Connection: 'keep-alive',
+            Cookie: cookieString,
+            Pragma: 'no-cache',
+            Referer: 'https://lk.rosreestr.ru/login?redirect=/',
+            'Sec-Fetch-Dest': 'empty',
+            'Sec-Fetch-Mode': 'cors',
+            'Sec-Fetch-Site': 'same-origin',
+            'User-Agent':
+              'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36',
+            'sec-ch-ua': '"Google Chrome";v="141", "Not?A_Brand";v="8", "Chromium";v="141"',
+            'sec-ch-ua-mobile': '?0',
+            'sec-ch-ua-platform': '"Linux"',
+          },
+        }
+      );
+
+      return response.data;
+    } catch (error) {
+      this.logger.error('Error fetching profile info:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Transform profile info to order user data format
+   * @param profileInfo - Profile information from API
+   * @returns Transformed order user data
+   */
+  private transformProfileToOrderData(profileInfo: ProfileInfoResponse): ProfileInfo {
+    const { attributesOauth } = profileInfo;
+
+    // Find RF_PASSPORT document (passport)
+    const passport = attributesOauth.documents?.elements.find((doc) => doc.type === 'RF_PASSPORT');
+
+    // If no passport found, throw error
+    if (!passport) {
+      throw new Error('RF_PASSPORT document not found in profile');
+    }
+
+    // Get email and phone from contacts or top-level fields
+    const email = attributesOauth.email || profileInfo.email || '';
+    const phone = attributesOauth.phone || profileInfo.phone || '';
+
+    return {
+      deliveryAction: {
+        delivery: '785003000000',
+        linkEmail: email,
+      },
+      declarants: [
+        {
+          firstname: attributesOauth.firstName,
+          surname: attributesOauth.lastName,
+          patronymic: attributesOauth.middleName,
+          countryInformation: attributesOauth.citizenship || 'RUS',
+          snils: attributesOauth.snils || profileInfo.snils || '',
+          email: email,
+          phoneNumber: phone,
+          addresses: [],
+        },
+      ],
+      attachments: [
+        {
+          documentTypeCode: '008001001000',
+          documentParentCode: '008001000000',
+          series: passport.series,
+          number: passport.number,
+          issueDate: passport.issueDate,
+          issuer: passport.issuedBy,
+          subjectType: 'declarant',
+        },
+      ],
+    };
+  }
+
+  async fetchUserProfileInfo(browserCookies: Cookie[]) {
+    this.logger.log('Step 0.5: Fetching user profile info');
+    const cookieString = cookiesToString(browserCookies);
+    const esiaUserId = this.extractCookieValue(browserCookies, 'PC_USER_WAS_AUTHORIZED');
+    if (!esiaUserId) {
+      throw new Error('PC_USER_WAS_AUTHORIZED cookie not found');
+    }
+
+    const profileInfoResponse = await this.fetchProfileInfo(esiaUserId, cookieString);
+    const profileInfo = this.transformProfileToOrderData(profileInfoResponse);
+    const declarant = profileInfo.declarants[0];
+    this.logger.log(`Profile info fetched for user: ${declarant.firstname} ${declarant.surname}`);
+
+    return profileInfo;
+  }
+
+  /**
    * Place order on Rosreestr portal using sequential API requests
    */
-  async placeOrderByFetch(cadNum: string, browserCookies: Cookie[]): Promise<PlaceOrderResult> {
+  async placeOrderByFetch(
+    cadNum: string,
+    browserCookies: Cookie[],
+    profileInfo: ProfileInfo
+  ): Promise<PlaceOrderResult> {
     // Get cookies from authenticated Puppeteer session
-    const cookieString = browserCookies.map((cookie) => `${cookie.name}=${cookie.value}`).join('; ');
+    const cookieString = cookiesToString(browserCookies);
 
     try {
       // Step 0: Check available balance
@@ -64,7 +175,7 @@ export class RosreestrOrderService {
 
       // Step 3: Upload statement data
       this.logger.log('Step 3: Uploading statement data');
-      const uploadResponse = await this.uploadStatement(cadNum, objectData, accessKey, cookieString);
+      const uploadResponse = await this.uploadStatement(cadNum, objectData, accessKey, profileInfo, cookieString);
       this.logger.log(`Upload response: ${JSON.stringify(uploadResponse)}`);
       await randomPause();
 
@@ -194,6 +305,7 @@ export class RosreestrOrderService {
     cadNum: string,
     objectData: CadastralSearchResponse['elements'][0],
     accessKey: string,
+    profileInfo: ProfileInfo,
     cookieString: string
   ): Promise<UploadResponse> {
     // Extract area from mainCharacters
@@ -233,34 +345,10 @@ export class RosreestrOrderService {
       declarantType: {
         code: 'person',
       },
-      deliveryAction: {
-        delivery: '785003000000',
-        linkEmail: 'fedotovsvit@gmail.com',
-      },
-      declarants: [
-        {
-          firstname: 'Светлана',
-          surname: 'Федотова',
-          patronymic: 'Сергеевна',
-          countryInformation: 'RUS',
-          snils: '116-001-837 00',
-          email: 'fedotovsvit@gmail.com',
-          phoneNumber: '+7(903)4317091',
-          addresses: [],
-        },
-      ],
+      deliveryAction: profileInfo.deliveryAction,
+      declarants: profileInfo.declarants,
       representative: [],
-      attachments: [
-        {
-          documentTypeCode: '008001001000',
-          documentParentCode: '008001000000',
-          series: '6010',
-          number: '825809',
-          issueDate: '08.09.2010',
-          issuer: 'Межрайонным отделом УФМС России по Ростовской области в городе Сальске',
-          subjectType: 'declarant',
-        },
-      ],
+      attachments: profileInfo.attachments,
       objects: [
         {
           objectTypeCode: objectData.objectType,
@@ -327,7 +415,7 @@ export class RosreestrOrderService {
       throw new Error('PC_USER_WAS_AUTHORIZED cookie not found');
     }
 
-    const cookieString = browserCookies.map((cookie) => `${cookie.name}=${cookie.value}`).join('; ');
+    const cookieString = cookiesToString(browserCookies);
 
     const payload = {
       superPackageGuid: uploadResponse.superPackageGuid,
