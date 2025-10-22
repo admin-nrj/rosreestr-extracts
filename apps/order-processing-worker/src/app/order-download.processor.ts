@@ -17,7 +17,12 @@ import { RosreestrOrderDownloaderService } from './services/rosreestr-order-down
 import { FileValidatorService } from './services/file-validator.service';
 import { Cookie } from 'puppeteer';
 import { BaseOrderProcessor } from './processors/base-order.processor';
-import { ORDER_JOB_NAMES, ORDER_QUEUE_NAME, CheckAndDownloadOrderJobData } from '@rosreestr-extracts/queue';
+import {
+  ORDER_JOB_NAMES,
+  ORDER_QUEUE_NAME,
+  CheckAndDownloadOrderJobData,
+  QUEUE_CONFIG,
+} from '@rosreestr-extracts/queue';
 import { randomPause } from '@rosreestr-extracts/utils';
 
 /**
@@ -32,12 +37,12 @@ export class OrderDownloadProcessor extends BaseOrderProcessor {
     @Inject(ORDERS_PACKAGE_NAME) ordersGrpcClient: ClientGrpc,
     @Inject(ROSREESTR_USERS_PACKAGE_NAME) rosreestrUsersGrpcClient: ClientGrpc,
     @Inject(appConfig.KEY) appCfg: ConfigType<typeof appConfig>,
-    browserService: RosreestrBrowserService,
     @Inject(cryptoConfig.KEY) cryptoCfg: ConfigType<typeof cryptoConfig>,
+    cryptoService: CryptoService,
+    browserService: RosreestrBrowserService,
     authService: RosreestrAuthService,
     private readonly orderDownloaderService: RosreestrOrderDownloaderService,
     private readonly fileValidatorService: FileValidatorService,
-    cryptoService: CryptoService,
     @InjectQueue(ORDER_QUEUE_NAME) private readonly orderQueue: Queue<CheckAndDownloadOrderJobData>
   ) {
     super(ordersGrpcClient, rosreestrUsersGrpcClient, appCfg, cryptoCfg, cryptoService, browserService, authService);
@@ -45,8 +50,9 @@ export class OrderDownloadProcessor extends BaseOrderProcessor {
 
   /**
    * Process job to check order status and download if ready
+   * Concurrency: 1 - processes one order at a time
    */
-  @Process(ORDER_JOB_NAMES.CHECK_AND_DOWNLOAD_ORDER)
+  @Process({ name: ORDER_JOB_NAMES.CHECK_AND_DOWNLOAD_ORDER, concurrency: QUEUE_CONFIG.CONCURRENCY.ORDER_PROCESSING })
   async checkAndDownloadOrder(job: Job<CheckAndDownloadOrderJobData>): Promise<void> {
     const { orderId, rosreestrOrderNum } = job.data;
 
@@ -88,7 +94,7 @@ export class OrderDownloadProcessor extends BaseOrderProcessor {
    */
   private async handleAttemptsExhausted(job: Job<CheckAndDownloadOrderJobData>): Promise<void> {
     const { orderId } = job.data;
-    await this.requeueAtBeginning(job, this.orderQueue, ORDER_JOB_NAMES.CHECK_AND_DOWNLOAD_ORDER, orderId);
+    await this.requeueAtEnd(job, this.orderQueue, ORDER_JOB_NAMES.CHECK_AND_DOWNLOAD_ORDER, orderId);
   }
 
   /**
@@ -141,8 +147,13 @@ export class OrderDownloadProcessor extends BaseOrderProcessor {
       this.logger.log(`Order ${orderId} not ready yet (status: ${statusResult.status})`);
 
       await this.updateOrder(orderId, {
+        status: 'РР ' + statusResult.status,
         lastCheckedAt: new Date(),
       });
+
+      await randomPause(60000, 120000)
+
+      throw new Error('Not ready yet')
     }
   }
 }

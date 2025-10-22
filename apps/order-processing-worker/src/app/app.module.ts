@@ -5,6 +5,7 @@ import { OrderProcessor } from './order.processor';
 import { OrderDownloadProcessor } from './order-download.processor';
 import { QueueModule } from '@rosreestr-extracts/queue';
 import { DalModule } from '@rosreestr-extracts/dal';
+import { DatabaseModule } from '@rosreestr-extracts/database';
 import { CryptoModule } from '@rosreestr-extracts/crypto';
 import { RedisPubSubModule } from '@rosreestr-extracts/redis-pubsub';
 import { databaseConfig, appConfig, redisConfig, cryptoConfig } from '@rosreestr-extracts/config';
@@ -14,6 +15,7 @@ import {
   ANOMALY_QUESTIONS_PACKAGE_NAME,
 } from '@rosreestr-extracts/interfaces';
 import { ORDERS_PROTO_PATH, ROSREESTR_USERS_PROTO_PATH, ANOMALY_QUESTIONS_PROTO_PATH } from '@rosreestr-extracts/proto';
+import { UserEntity, RosreestrUserEntity } from '@rosreestr-extracts/entities';
 import { RosreestrBrowserService } from './services/rosreestr-browser.service';
 import { RosreestrAuthService } from './services/rosreestr-auth.service';
 import { RosreestrOrderService } from './services/rosreestr-order.service';
@@ -29,6 +31,9 @@ import { FileValidatorService } from './services/file-validator.service';
     ConfigModule.forRoot({
       isGlobal: true,
       load: [databaseConfig, appConfig, redisConfig, cryptoConfig],
+    }),
+    DatabaseModule.forRoot({
+      entities: [UserEntity, RosreestrUserEntity],
     }),
     QueueModule.forConsumer(),
     DalModule,

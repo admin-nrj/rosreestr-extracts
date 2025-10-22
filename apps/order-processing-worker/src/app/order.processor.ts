@@ -7,6 +7,7 @@ import {
   ORDER_JOB_NAMES,
   ORDER_QUEUE_NAME,
   OrderJobData,
+  QUEUE_CONFIG,
 } from '@rosreestr-extracts/queue';
 import { CryptoService } from '@rosreestr-extracts/crypto';
 import { ORDERS_PACKAGE_NAME, ROSREESTR_USERS_PACKAGE_NAME } from '@rosreestr-extracts/interfaces';
@@ -36,11 +37,11 @@ export class OrderProcessor extends BaseOrderProcessor implements OnModuleDestro
     @Inject(ORDERS_PACKAGE_NAME) ordersGrpcClient: ClientGrpc,
     @Inject(ROSREESTR_USERS_PACKAGE_NAME) rosreestrUsersGrpcClient: ClientGrpc,
     @Inject(appConfig.KEY) appCfg: ConfigType<typeof appConfig>,
-    browserService: RosreestrBrowserService,
-    @InjectQueue(ORDER_QUEUE_NAME) private readonly orderQueue: Queue<OrderJobData | CheckAndDownloadOrderJobData>,
-    cryptoService: CryptoService,
     @Inject(cryptoConfig.KEY) cryptoCfg: ConfigType<typeof cryptoConfig>,
+    cryptoService: CryptoService,
+    browserService: RosreestrBrowserService,
     authService: RosreestrAuthService,
+    @InjectQueue(ORDER_QUEUE_NAME) private readonly orderQueue: Queue<OrderJobData | CheckAndDownloadOrderJobData>,
     private readonly orderService: RosreestrOrderService
   ) {
     super(ordersGrpcClient, rosreestrUsersGrpcClient, appCfg, cryptoCfg, cryptoService, browserService, authService);
@@ -50,7 +51,11 @@ export class OrderProcessor extends BaseOrderProcessor implements OnModuleDestro
     await this.browserService.shutdown();
   }
 
-  @Process(ORDER_JOB_NAMES.PROCESS_ORDER)
+  /**
+   * Process order job - place order on Rosreestr
+   * Concurrency: 1 - processes one order at a time
+   */
+  @Process({ name: ORDER_JOB_NAMES.PROCESS_ORDER, concurrency: QUEUE_CONFIG.CONCURRENCY.ORDER_PROCESSING })
   async processOrder(job: Job<OrderJobData>): Promise<void> {
     const { orderId, cadNum, userId } = job.data;
 
