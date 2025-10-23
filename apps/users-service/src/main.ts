@@ -17,7 +17,7 @@ async function bootstrap() {
   // Create temporary app context to get config
   const appContext = await NestFactory.createApplicationContext(AppModule);
   const appCfg = appContext.get<ConfigType<typeof appConfig>>(appConfig.KEY);
-  const url = appCfg.urls.usersService;
+  const port = appCfg.ports.usersService;
   await appContext.close();
 
   // Create microservice with configured port
@@ -26,12 +26,12 @@ async function bootstrap() {
     options:{
       package: USERS_PACKAGE_NAME,
       protoPath: USERS_PROTO_PATH,
-      url
+      url: `0.0.0.0:${port}`,
     }
   });
 
   await app.listen();
-  Logger.log(`🚀 Users service is running on gRPC ${url}`);
+  Logger.log(`🚀 Users service is running on gRPC ${port}`);
 
   // Setup graceful shutdown
   setupGracefulShutdown(app, 'Users Service');

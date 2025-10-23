@@ -13,29 +13,21 @@ RUN npm ci
 
 # Copy source code
 COPY libs ./libs
-COPY apps/order-processing-worker ./apps/order-processing-worker
+COPY apps/rosreestr-users-service ./apps/rosreestr-users-service
 
 # Build the application
-RUN npx nx build order-processing-worker --prod
-
-# Debug: show generated package.json
-RUN echo "=== Generated package.json ===" && cat /app/dist/apps/order-processing-worker/package.json
+RUN npx nx build rosreestr-users-service --prod
 
 # Production stage
 FROM node:20-alpine
 
 WORKDIR /app
 
-# Copy built application and package.json
-COPY --from=builder /app/dist/apps/order-processing-worker ./
+# Copy built application
+COPY --from=builder /app/dist/apps/rosreestr-users-service ./
 
-# Check if package.json exists, if not copy from build
-RUN if [ ! -f package.json ]; then \
-      echo "package.json not found in dist, this is expected with generatePackageJson"; \
-    fi
-
-# Install production dependencies from generated package.json
-RUN if [ -f package.json ]; then npm ci --only=production; fi
+# Install production dependencies only
+RUN npm ci --only=production
 
 # Set environment variables
 ENV NODE_ENV=production
@@ -56,5 +48,8 @@ RUN chmod +x /app/docker-entrypoint.sh
 # Run as non-root user
 USER node
 
-# Start the worker
+# Expose gRPC port
+EXPOSE 5004
+
+# Start the service
 CMD ["/app/docker-entrypoint.sh"]

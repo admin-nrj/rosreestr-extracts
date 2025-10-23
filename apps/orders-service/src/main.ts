@@ -16,7 +16,7 @@ import { setupGracefulShutdown } from '@rosreestr-extracts/utils';
 async function bootstrap() {
   const appContext = await NestFactory.createApplicationContext(OrdersModule);
   const appCfg = appContext.get<ConfigType<typeof appConfig>>(appConfig.KEY);
-  const url = appCfg.urls.ordersService;
+  const port = appCfg.ports.ordersService;
   await appContext.close();
 
   const app = await NestFactory.createMicroservice<MicroserviceOptions>(
@@ -26,13 +26,13 @@ async function bootstrap() {
       options: {
         package: ORDERS_PACKAGE_NAME,
         protoPath: ORDERS_PROTO_PATH,
-        url
+        url: `0.0.0.0:${port}`,
       }
     }
   );
 
   await app.listen();
-  Logger.log(`🚀 Orders service is running on gRPC ${url}`);
+  Logger.log(`🚀 Orders service is running on gRPC ${port}`);
 
   // Setup graceful shutdown
   setupGracefulShutdown(app, 'Orders Service');

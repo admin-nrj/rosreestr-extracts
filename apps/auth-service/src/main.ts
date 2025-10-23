@@ -16,7 +16,7 @@ import { setupGracefulShutdown } from '@rosreestr-extracts/utils';
 async function bootstrap() {
   const appContext = await NestFactory.createApplicationContext(AuthModule);
   const appCfg = appContext.get<ConfigType<typeof appConfig>>(appConfig.KEY);
-  const url = appCfg.urls.authService;
+  const port = appCfg.ports.authService;
   await appContext.close();
 
   const app = await NestFactory.createMicroservice<MicroserviceOptions>(AuthModule, {
@@ -24,12 +24,12 @@ async function bootstrap() {
     options: {
       package: AUTH_PACKAGE_NAME,
       protoPath: AUTH_PROTO_PATH,
-      url
+      url: `0.0.0.0:${port}`,
     }
   });
 
   await app.listen();
-  Logger.log(`🚀 Auth service is running on gRPC ${url}`);
+  Logger.log(`🚀 Auth service is running on gRPC ${port}`);
 
   // Setup graceful shutdown
   setupGracefulShutdown(app, 'Auth Service');
