@@ -40,12 +40,12 @@ RUN if [ -f package.json ]; then npm ci --only=production; fi
 # Set environment variables
 ENV NODE_ENV=production
 
-# Create entrypoint script
-RUN cat > /app/docker-entrypoint.sh << 'EOF'
+# Create entrypoint script using Docker heredoc syntax
+COPY <<EOF /app/docker-entrypoint.sh
 #!/bin/sh
 # Read password from Docker secret if it exists
 if [ -f /run/secrets/db-password ]; then
-  export DB_PASSWORD=$(cat /run/secrets/db-password)
+  export DB_PASSWORD=\$(cat /run/secrets/db-password)
 fi
 # Start the application
 exec node main.js
